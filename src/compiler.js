@@ -5,6 +5,7 @@ window.onload = () => {
         document.getElementById("input"),
         document.getElementById("binOut")
     );
+    compiler.compileFull();
     document.getElementById("qrcode").onclick = () => {
         document.getElementById("qrcode").style.display = "none";
     }
@@ -162,7 +163,7 @@ class Compiler {
         if (errors.length == 0) {
             for (let i = 0; i < this.compiledMemory.length; i++) {
                 const compiledByte = this.compiledMemory[i];
-                outBin += `<span title="${compiledByte.byteInfo}">${compiledByte.byteBin}</span><br>`;
+                outBin += `<span title="${compiledByte.byteInfo}">0x${compiledByte.address.toString(16)}: ${compiledByte.byteBin}</span><br>`;
             }
         } else {
             for (let i = 0; i < errors.length; i++) {

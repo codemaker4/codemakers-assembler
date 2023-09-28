@@ -32,7 +32,6 @@ body {
   grid-area: output;
   margin: 0;
   border: 0;
-  padding-left: 5px;
   border-left-width: 5px;
   border-style: solid;
   border-color: gray;
@@ -41,6 +40,12 @@ body {
   position: sticky;
   left: 0;
   background-color: #222;
+  text-align: right;
+}
+
+#binOut {
+  width: fit-content;
+  margin: auto;
 }
 
 .inputContainer {
