@@ -144,7 +144,7 @@ class Compiler {
             let compiledByteOut = compiledByte.compile(this.instructionSet, labels);
             if (compiledByteOut.error) {
                 // console.log("error on line" + compiledByteOut.errorLine.toString() + ":" + compiledByteOut.errorText);
-                // errors.push("error on line" + compiledByteOut.errorLine.toString() + ": " + compiledByteOut.errorText);
+                errors.push("error on line" + compiledByteOut.errorLine.toString() + ": " + compiledByteOut.errorText);
             }
         }
 
@@ -240,7 +240,7 @@ class Compiler {
                 type = "address";
             } else if (/^:[a-zA-Z_]+$/.test(rawPart)) {
                 type = "label";
-            } else if (/^[#$%][0-9a-fA-F]+$/.test(rawPart)) {
+            } else if (/^[#$%][0-9a-fA-F]+$/.test(rawPart) || /^@[a-zA-Z_]+\.[hl]$/.test(rawPart)) {
                 type = "byte";
             } else {
                 type = "error";
@@ -358,11 +358,34 @@ class CompiledByte {
                     this.byteBin = convertToByte(num);
                     break;
 
+                case "@":
+                    let address = undefined;
+                    for (let i = 0; i < labels.length; i++) {
+                        const label = labels[i];
+                        if (label.name == numText.slice(0, -2)) {
+                            address = label.address
+                            break;
+                        }
+                    }
+                    if (address === undefined) {
+                        return {
+                            error:true,
+                            errorLine:this.origLine,
+                            errorText:"Could not find address for pointer"
+                        }
+                    }
+                    if (numText.slice(-2) == ".h") {
+                        this.byteBin = convertToByte(Math.floor(address/256));
+                    } else { // address L
+                        this.byteBin = convertToByte(address%256);
+                    }
+                    break;
+
                 default:
                     return {
                         error:true,
                         errorLine: this.origLine,
-                        errorText:"Invalid value datatype in CompiledByte.parse. Should not happen"
+                        errorText:"Invalid value datatype in CompiledByte.parse. This is a bug, please report."
                     }
                     break;
             }
