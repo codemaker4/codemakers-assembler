@@ -141,10 +141,23 @@ class Compiler {
             }
 
             if (parts[0].type == "label") {
-                labels.push({
-                    name:parts[0].text.slice(1),
-                    address:this.compiledMemory.length
-                })
+                let labelName = parts[0].text.slice(1);
+                let labelFound = false;
+                for (let i = 0; i < labels.length; i++) {
+                    const label = labels[i];
+                    if (label.name == labelName) {
+                        errors.push(`Error on line ${line.toString()}: label ${labelName} already exists at line ${label.line}.`);
+                        labelFound = true;
+                        break;
+                    }
+                }
+                if (!labelFound) {
+                    labels.push({
+                        name:labelName,
+                        address:this.compiledMemory.length,
+                        line:line
+                    });
+                }
                 parts = parts.slice(1); // remove label from parts to be parsed, so values written after the label are still read.
             }
 
