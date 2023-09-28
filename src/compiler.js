@@ -180,18 +180,19 @@ class Compiler {
         setTimeout(() => {this.makeQR()},0);
     }
     makeQR() {
-        let qrCodeText = "https://codemaker4.github.io/codemakers-assembler/binaryViewer/?";
+        let qrCodeText = "";
         for (let i = 0; i < this.compiledMemory.length; i++) {
             const compiledByte = this.compiledMemory[i];
             if (compiledByte.type == "error") {
                 qrCodeText += "error";
             } else {
-                qrCodeText += compiledByte.byteBin;
+                qrCodeText += `${compiledByte.byteBin}-${compiledByte.byteInfoShort}`;
             }
             if (i+1 < this.compiledMemory.length) {
                 qrCodeText += "-";
             }
         }
+        qrCodeText = "https://codemaker4.github.io/codemakers-assembler/binaryViewer/?" + qrCodeText.replace(/[^a-z0-9_]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
         try {
             if (this.qrCode === undefined) {
                 document.getElementById("qrcode").innerHTML = "";
@@ -278,6 +279,7 @@ class CompiledByte {
         this.address = address;
         this.byteBin = "00000000";
         this.byteInfo = `address: 0x${address.toString(16)}\nline number: ${origLine}\ntype: ${part.type}\nsource code: ${part.text}`;
+        this.byteInfoShort = `line ${origLine}: ${part.type} ${part.text}`;
     }
     compile(instructionSet, labels) {
         if (this.part.type == "addressH" || this.part.type == "addressL") {
