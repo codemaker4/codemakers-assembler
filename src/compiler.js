@@ -10,7 +10,23 @@ window.onload = () => {
         document.getElementById("qrcode").style.display = "none";
     }
     doLineNumbers();
-    document.getElementById("input").onkeydown = () => {setTimeout(doLineNumbers,0)};
+    let processTimeout;
+    document.getElementById("input").onkeydown = () => {
+        if (processTimeout) {
+            clearTimeout(processTimeout);
+            processTimeout = setTimeout(() => {
+                doLineNumbers();
+                compiler.compileFull();
+                processTimeout = 0;
+            },1000);
+        } else {
+            processTimeout = setTimeout(() => {
+                doLineNumbers();
+                compiler.compileFull();
+            },0);
+        }
+
+    };
 }
 
 function doLineNumbers() {
