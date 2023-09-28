@@ -2,11 +2,21 @@ let compiler;
 
 window.onload = () => {
     compiler = new Compiler(
-        document.getElementsByClassName("input")[0],
+        document.getElementById("input"),
         document.getElementById("binOut")
     );
     document.getElementById("qrcode").onclick = () => {
         document.getElementById("qrcode").style.display = "none";
+    }
+    doLineNumbers();
+    document.getElementById("input").onkeydown = () => {setTimeout(doLineNumbers,0)};
+}
+
+function doLineNumbers() {
+    document.getElementById("lineNumbers").innerText = "";
+    let lineNumbers = document.getElementById("input").innerText.split("\n").length;
+    for (let i = 0; i < lineNumbers; i++) {
+        document.getElementById("lineNumbers").innerText += `${i}\n`;
     }
 }
 
