@@ -14,11 +14,12 @@ window.onload = () => {
 }
 
 function doLineNumbers() {
-    document.getElementById("lineNumbers").innerText = "";
+    let newText = "";
     let lineNumbers = document.getElementById("input").innerText.split("\n").length;
     for (let i = 0; i < lineNumbers; i++) {
-        document.getElementById("lineNumbers").innerText += `${i}\n`;
+        newText += `${i}\n`;
     }
+    document.getElementById("lineNumbers").innerText = newText;
 }
 
 class Compiler {
