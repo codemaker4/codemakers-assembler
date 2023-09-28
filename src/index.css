@@ -37,6 +37,7 @@ body {
   border-style: solid;
   border-color: gray;
   overflow: auto;
+  word-break: break-word;
   position: sticky;
   left: 0;
   background-color: #222;
