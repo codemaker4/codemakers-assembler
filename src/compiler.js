@@ -135,14 +135,14 @@ class Compiler {
                 if (part.type == "address") {
                     this.compiledMemory.push(new CompiledByte({
                         type:"addressH",
-                        text:part.text
-                    }, line));
+                        text:part.text,
+                    }, line, this.compiledMemory.length));
                     this.compiledMemory.push(new CompiledByte({
                         type:"addressL",
                         text:part.text
-                    }, line));
+                    }, line, this.compiledMemory.length));
                 } else {
-                    this.compiledMemory.push(new CompiledByte(part, line));
+                    this.compiledMemory.push(new CompiledByte(part, line, this.compiledMemory.length));
                 }
             }
 
@@ -162,7 +162,7 @@ class Compiler {
         if (errors.length == 0) {
             for (let i = 0; i < this.compiledMemory.length; i++) {
                 const compiledByte = this.compiledMemory[i];
-                outBin += compiledByte.byteBin + "<br>";
+                outBin += `<span title="${compiledByte.byteInfo}">${compiledByte.byteBin}</span><br>`;
             }
         } else {
             for (let i = 0; i < errors.length; i++) {
@@ -180,7 +180,7 @@ class Compiler {
         setTimeout(() => {this.makeQR()},0);
     }
     makeQR() {
-        let qrCodeText = "https://codemaker4.github.io/codemakers-compiler/binaryViewer/?";
+        let qrCodeText = "https://codemaker4.github.io/codemakers-assembler/binaryViewer/?";
         for (let i = 0; i < this.compiledMemory.length; i++) {
             const compiledByte = this.compiledMemory[i];
             if (compiledByte.type == "error") {
@@ -272,10 +272,12 @@ class Compiler {
 }
 
 class CompiledByte {
-    constructor(part, origLine) {
+    constructor(part, origLine, address) {
         this.part = part; // {type:<instruction, address or byte>}
         this.origLine = origLine;
+        this.address = address;
         this.byteBin = "00000000";
+        this.byteInfo = `address: 0x${address.toString(16)}\nline number: ${origLine}\ntype: ${part.type}\nsource code: ${part.text}`;
     }
     compile(instructionSet, labels) {
         if (this.part.type == "addressH" || this.part.type == "addressL") {
