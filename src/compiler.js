@@ -34,7 +34,7 @@ function doLineNumbers() {
     for (let i = 0; i < lineNumbers; i++) {
         newText += `${i}\n`;
     }
-    document.getElementById("lineNumbers").innerText = newText;
+    document.getElementById("lineNumbers").innerText = newText + "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 }
 
 class Compiler {
@@ -367,7 +367,7 @@ class CompiledByte {
                     break;
                 
                 case "#":
-                    if (parseInt(numText) === NaN) {
+                    if (isNaN(parseInt(numText))) {
                         return {
                             error:true,
                             errorLine: this.origLine,
@@ -386,7 +386,7 @@ class CompiledByte {
                     break;
 
                 case "$":
-                    if (parseInt(numText, 16) === NaN) {
+                    if (isNaN(parseInt(numText, 16))) {
                         return {
                             error:true,
                             errorLine: this.origLine,
