@@ -92,13 +92,13 @@ class Compiler {
         ]);
     }
     compileFull() {
-        localStorage.setItem("SMPU_assembler_opened_source_code", this.codeInput.innerText);
-
-        let inputText = this.codeInput.innerText;
+        let inputText = this.codeInput.innerText.replace(/\</g, "").replace(/&.{0,4};/g, "");
         let i = 0;
         let line = 0;
         let labels = []; // {name:<name>,address:<compiledMemoryIndex>}
         let errors = [];
+
+        localStorage.setItem("SMPU_assembler_opened_source_code", inputText);
 
         this.compiledMemory = [];
 
