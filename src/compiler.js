@@ -19,19 +19,12 @@ window.onload = () => {
 
     let processTimeout;
     document.getElementById("input").onkeydown = () => {
-        if (processTimeout) {
-            clearTimeout(processTimeout);
-            processTimeout = setTimeout(() => {
-                doLineNumbers();
-                compiler.compileFull();
-                processTimeout = 0;
-            },1000);
-        } else {
-            processTimeout = setTimeout(() => {
-                doLineNumbers();
-                compiler.compileFull();
-            },0);
-        }
+        clearTimeout(processTimeout);
+        processTimeout = setTimeout(() => {
+            doLineNumbers();
+            compiler.compileFull();
+            processTimeout = 0;
+        },1000);
     };
 }
 
