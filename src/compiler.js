@@ -1,6 +1,11 @@
 let compiler;
 
 window.onload = () => {
+    let sourceCode = localStorage.getItem("SMPU_assembler_opened_source_code");
+    if (sourceCode) {
+        document.getElementById("input").innerText = sourceCode;
+    }
+
     compiler = new Compiler(
         document.getElementById("input"),
         document.getElementById("binOut")
@@ -9,7 +14,9 @@ window.onload = () => {
     document.getElementById("qrcode").onclick = () => {
         document.getElementById("qrcode").style.display = "none";
     }
+
     doLineNumbers();
+
     let processTimeout;
     document.getElementById("input").onkeydown = () => {
         if (processTimeout) {
@@ -25,7 +32,6 @@ window.onload = () => {
                 compiler.compileFull();
             },0);
         }
-
     };
 }
 
@@ -93,6 +99,8 @@ class Compiler {
         ]);
     }
     compileFull() {
+        localStorage.setItem("SMPU_assembler_opened_source_code", this.codeInput.innerText);
+
         let inputText = this.codeInput.innerText;
         let i = 0;
         let line = 0;
