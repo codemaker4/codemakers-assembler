@@ -199,11 +199,13 @@ class Compiler {
 
         let outBin = ""
         if (errors.length == 0) {
+            this.outputContainer.classList.add("alignRight");
             for (let i = 0; i < this.compiledMemory.length; i++) {
                 const compiledByte = this.compiledMemory[i];
                 outBin += `<span title="${compiledByte.byteInfo}">0x${compiledByte.address.toString(16)}: ${compiledByte.byteBin}</span><br>`;
             }
         } else {
+            this.outputContainer.classList.remove("alignRight");
             for (let i = 0; i < errors.length; i++) {
                 const error = errors[i];
                 outBin += error + "<br>";

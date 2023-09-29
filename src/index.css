@@ -40,6 +40,9 @@ body {
   position: sticky;
   left: 0;
   background-color: #222;
+}
+
+.alignRight {
   text-align: right;
 }
 
