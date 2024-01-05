@@ -10,19 +10,20 @@ window.onload = () => {
         document.getElementById("input"),
         document.getElementById("binOut")
     );
-    compiler.compileFull();
     document.getElementById("qrcode").onclick = () => {
         document.getElementById("qrcode").style.display = "none";
     }
 
     doLineNumbers();
+    compiler.compile();
 
     let processTimeout;
     document.getElementById("input").onkeydown = () => {
         clearTimeout(processTimeout);
         processTimeout = setTimeout(() => {
+            localStorage.setItem("SMPU_assembler_opened_source_code", document.getElementById("input").innerText);
             doLineNumbers();
-            compiler.compileFull();
+            compiler.compile();
             processTimeout = 0;
         },1000);
     };
@@ -38,495 +39,284 @@ function doLineNumbers() {
 }
 
 class Compiler {
-    constructor(codeInput, outputContainer) {
-        this.codeInput = codeInput;
-        this.outputContainer = outputContainer;
-        this.compiledMemory = [];
-        this.qrCode = undefined;
-        this.instructionSet = new InstructionSet([
-            new InstructionType("HLT",0,[]),
-            new InstructionType("NOP",1,[]),
-
-            new InstructionType("ADR",2,["address"]),
-            new InstructionType("LDA",3,[]),
-            new InstructionType("STA",4,[]),
-            new InstructionType("LDB",5,[]),
-            new InstructionType("SWP",6,[]),
-            new InstructionType("LDH",7,[]),
-            new InstructionType("LDL",8,[]),
-            new InstructionType("STH",9,[]),
-            new InstructionType("STL",10,[]),
-            new InstructionType("LDQ",11,[]),
-            new InstructionType("STQ",12,[]),
-            new InstructionType("CLA",13,["byte"]),
-            new InstructionType("CLB",14,["byte"]),
-            new InstructionType("CLQ",15,["byte"]),
-
-            new InstructionType("ADD",20,[]),
-            new InstructionType("ADDC",21,[]),
-            new InstructionType("SUB",22,[]),
-            new InstructionType("SUBC",23,[]),
-            new InstructionType("SHL",24,[]),
-            new InstructionType("SHLC",25,[]),
-            new InstructionType("SHR",26,[]),
-            new InstructionType("SHRC",27,[]),
-            new InstructionType("AND",28,[]),
-            new InstructionType("OR",29,[]),
-            new InstructionType("XOR",30,[]),
-            new InstructionType("NAND",31,[]),
-            new InstructionType("NOR",32,[]),
-            new InstructionType("XNOR",33,[]),
-            new InstructionType("CKSM",34,[]),
-            new InstructionType("CKSMC",35,[]),
-            new InstructionType("INCR",36,[]),
-            new InstructionType("DECR",37,[]),
-
-            new InstructionType("JMP",38,[]),
-            new InstructionType("JMPC",39,[]),
-            new InstructionType("JMPZ",40,[]),
-            new InstructionType("JMPQ",41,[]),
-            new InstructionType("PSH",42,[]),
-            new InstructionType("POP",43,[]),
-            new InstructionType("SUBR",44,[]),
-            new InstructionType("RET",45,[])
-        ]);
+    constructor(input, output) {
+        this.input = input;
+        this.output = output;
+        this.codeParts = [];
     }
-    compileFull() {
-        let inputText = this.codeInput.innerText.replace(/\</g, "").replace(/&.{0,4};/g, "");
-        let i = 0;
-        let line = 0;
-        let labels = []; // {name:<name>,address:<compiledMemoryIndex>}
-        let errors = [];
 
-        localStorage.setItem("SMPU_assembler_opened_source_code", inputText);
+    /* Compiles the code in the given input element, and puts compiled binary in the output
+    */
+    compile() {
+        // parse text and split to parts, keep track of source line numbers, give errors for invalid part syntax
 
-        this.compiledMemory = [];
+        let sourceCodeLines = this.input.innerText
+            .replace(/\</g, "") // remove HTML tags
+            .replace(/&.{0,4};/g, "") // remove HTML char codes
+            .split("\n"); // and split per newline
 
-        while (i < inputText.length) {
-            let getLinePartsOutput = this.getLineParts(inputText, i);
-            // console.log(getLinePartsOutput, i, line);
-            i = getLinePartsOutput.i;
-            let parts = getLinePartsOutput.parts;
-            let error = getLinePartsOutput.error;
+        console.log(sourceCodeLines);
 
-            if (error) {
-                // console.log("parsed syntax error");
-                for (let j = 0; j < parts.length; j++) {
-                    const part = parts[j];
-                    if (part.type == "error") {
-                        errors.push("Error on line " + line.toString() + ": Could not understand '" + part.text + "'.");
-                    }
+        this.codeParts = [];
+
+        for (let lineNumber = 0; lineNumber < sourceCodeLines.length; lineNumber++) {
+            let line = sourceCodeLines[lineNumber];
+
+            if (line.length == 0) {continue}
+            
+            if (line.indexOf('-') != -1) {
+                line = line.slice(0, line.indexOf('-'));
+            }
+
+            while (line[0] == " ") {
+                line = line.slice(1);
+            }
+    
+            let partTexts = line.split(" ");
+            for (let i = 0; i < partTexts.length; i++) {
+                if (partTexts[i].length > 0) {
+                    this.codeParts.push(new CodePart(lineNumber, partTexts[i]));
                 }
-                line ++;
-                continue;
             }
-            if (parts.length == 0) {
-                // console.log("parsed newline");
-                line ++;
+        }
+
+        // split addresses into H and L byte parts
+
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
+            if (codePart.hasError) {
                 continue;
             }
 
-            if (parts[0].type == "instruction") {
-                let checkInstructionResult = this.instructionSet.checkInstruction(parts)
-                if (!checkInstructionResult.error) {
-                    // console.log("validated instruction", parts);
-                } else {
-                    // console.log("instruction invalid", checkInstructionResult.errorList, i, line, parts);
-                    for (let i = 0; i < checkInstructionResult.errorList.length; i++) {
-                        const error = checkInstructionResult.errorList[i];
-                        errors.push("Error on line " + line.toString() + ": " + error);
-                    }
-                    line++
+            if (codePart.type == "address") {
+                this.codeParts.splice(i, 1,
+                    new CodePart(codePart.origLine, codePart.origCode + ".h"),
+                    new CodePart(codePart.origLine, codePart.origCode + ".l"),
+                );
+                this.codeParts[i].debugLog += "This address was split. This is only the high 8 bits.\n";
+                i++;
+                this.codeParts[i].debugLog += "This address was split. This is only the low 8 bits.\n";
+            }
+        }
+
+        // check if instructions exist and have correct number of byte arguments and arguments are on same source line as instruction
+
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
+            if (codePart.hasError) {
+                continue;
+            }
+
+            if (codePart.type == "instruction") {
+                const instruction = getInstrucion(codePart.origCode);
+                if (instruction.isError) {
+                    codePart.debugLog += `ERROR instruction not found: Could not find an instruction with name "${codePart.origCode}". Check the spelling, or if this is not supposed to be an instruction, check the syntax.\n`;
+                    codePart.hasError = true;
                     continue;
                 }
-            }
 
-            if (parts[0].type == "label") {
-                let labelName = parts[0].text.slice(1);
-                let labelFound = false;
-                for (let i = 0; i < labels.length; i++) {
-                    const label = labels[i];
-                    if (label.name == labelName) {
-                        errors.push(`Error on line ${line.toString()}: label ${labelName} already exists at line ${label.line}.`);
-                        labelFound = true;
+                if (instruction.requiredArgs.length == 0) {
+                    codePart.debugLog += `This instruction requires no arguments.\n`;
+                    continue;
+                }
+
+                for (let j = 0; j < instruction.requiredArgs.length; j++) {
+                    i++;
+                    if (this.codeParts[i] === undefined || codePart.origLine !== this.codeParts[i].origLine) {
+                        codePart.debugLog += `ERROR argument missing: The instruction "${instruction.short}" requires ${instruction.requiredArgs.length} arguments, but only ${j} arguments were given. Arguments of instructions need to be on the same line of code as the original instruction.\n`;
+                        codePart.hasError = true;
                         break;
                     }
+                    if (this.codeParts[i].hasError) {
+                        codePart.debugLog += `ERROR argument has error: The instruction "${instruction.short}" requires ${instruction.requiredArgs.length} arguments, but argument number ${j + 1} has had an error in previous steps of the compilation.\n`;
+                        codePart.hasError = true;
+                        continue;
+                    }
+                    if (instruction.requiredArgs[j] !== this.codeParts[i].type) {
+                        codePart.debugLog += `ERROR argument wrong type: The instruction "${instruction.short}" got the wrong type of argument. Argument number ${j} is supposed to be of type "${instruction.requiredArgs[j]}", but an argument of type ${this.codeParts[i].type} was found instead. This is what that argument looked like: "${this.codeParts[i].origCode}.\n"`;
+                        codePart.hasError = true;
+                        continue;
+                    }
                 }
-                if (!labelFound) {
-                    labels.push({
-                        name:labelName,
-                        address:this.compiledMemory.length,
-                        line:line
-                    });
-                }
-                parts = parts.slice(1); // remove label from parts to be parsed, so values written after the label are still read.
-            }
 
-            for (let j = 0; j < parts.length; j++) {
-                const part = parts[j];
-                if (part.type == "address") {
-                    this.compiledMemory.push(new CompiledByte({
-                        type:"addressH",
-                        text:part.text,
-                    }, line, this.compiledMemory.length));
-                    this.compiledMemory.push(new CompiledByte({
-                        type:"addressL",
-                        text:part.text
-                    }, line, this.compiledMemory.length));
-                } else {
-                    this.compiledMemory.push(new CompiledByte(part, line, this.compiledMemory.length));
+                if (!codePart.hasError) {
+                    codePart.debugLog += `This instruction has the required arguments.\n`;
                 }
             }
-
-            line ++;
         }
 
-        for (let i = 0; i < this.compiledMemory.length; i++) {
-            const compiledByte = this.compiledMemory[i];
-            let compiledByteOut = compiledByte.compile(this.instructionSet, labels);
-            if (compiledByteOut.error) {
-                // console.log("error on line" + compiledByteOut.errorLine.toString() + ":" + compiledByteOut.errorText);
-                errors.push("error on line" + compiledByteOut.errorLine.toString() + ": " + compiledByteOut.errorText);
-            }
-        }
+        // process pseudo instructions into real assembly
+        // there are no pseudo instructions yet
 
-        let outBin = ""
-        if (errors.length == 0) {
-            this.outputContainer.classList.add("alignRight");
-            for (let i = 0; i < this.compiledMemory.length; i++) {
-                const compiledByte = this.compiledMemory[i];
-                outBin += `<span title="${compiledByte.byteInfo}">0x${compiledByte.address.toString(16)}: ${compiledByte.byteBin}</span><br>`;
-            }
-        } else {
-            this.outputContainer.classList.remove("alignRight");
-            for (let i = 0; i < errors.length; i++) {
-                const error = errors[i];
-                outBin += error + "<br>";
-            }
-        }
 
-        this.outputContainer.innerHTML = outBin;
+        // process and save addresses of label parts and calculate memory addresses of other codeParts.
 
-        console.log("compiling done");
-    }
-    startMakeQR() {
-        document.getElementById("makeQRbutton").innerText = "making QR code...";
-        setTimeout(() => {this.makeQR()},0);
-    }
-    makeQR() {
-        let qrCodeText = "https://codemaker4.github.io/codemakers-assembler/binaryViewer/?";
-        for (let i = 0; i < this.compiledMemory.length; i++) {
-            const compiledByte = this.compiledMemory[i];
-            if (compiledByte.type == "error") {
-                qrCodeText += "error";
-            } else {
-                qrCodeText += compiledByte.byteBin;
-            }
-            if (i+1 < this.compiledMemory.length) {
-                qrCodeText += "-";
-            }
-        }
-        try {
-            if (this.qrCode === undefined) {
-                document.getElementById("qrcode").innerHTML = "";
-                this.qrCode =   new QRCode(document.getElementById("qrcode"), {
-                    text: qrCodeText,
-                    width: 1024,
-                    height: 1024,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.L
-                });
-            } else {
-                this.qrCode.clear();
-                this.qrCode.makeCode(qrCodeText);
-            }
-        } catch (error) {
-            document.getElementById("qrcode").innerText = "There was an error creating the QR code.";
-            this.qrCode = undefined;
-        }
+        let labels = []; // [{label: name, address: address, origLine: origLine}]
+        let address = 0;
 
-        document.getElementById("qrcode").style.display = "block";
-        document.getElementById("makeQRbutton").innerText = "make QR code";
-    }
-    getLineParts(inputText, i) {
-        let lineText = "";
-        while (inputText[i] != "\n" && i < inputText.length) {
-            lineText += inputText[i];
-            i++;
-        }
-        i++; // make I the first char of the next line for returning
-
-        if (lineText.length == 0) {
-            return {
-                i:i,
-                parts:[],
-                error:false,
-                empty:true
-            };
-        }
-        if (lineText.indexOf('-') != -1) {
-            lineText = lineText.slice(0,lineText.indexOf('-'));
-        }
-
-        let rawParts = lineText.split(" ");
-        let parts = [];
-        let hasError = false;
-        for (let j = 0; j < rawParts.length; j++) {
-            const rawPart = rawParts[j];
-            if (rawPart.length == 0) {
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
+            if (codePart.hasError) {
+                address++;
                 continue;
             }
-            let type;
-            if (!/[^A-Z]/g.test(rawPart)) {
-                type = "instruction";
-            } else if (/^@[a-zA-Z_]+$/.test(rawPart)) {
-                type = "address";
-            } else if (/^:[a-zA-Z_]+$/.test(rawPart)) {
-                type = "label";
-            } else if (/^[#$%][0-9a-fA-F]+$/.test(rawPart) || /^@[a-zA-Z_]+\.[hl]$/.test(rawPart)) {
-                type = "byte";
+
+            codePart.address = address;
+
+            if (codePart.type == "label") {
+                let found = labels.find((label)=>{label.label == codePart.output});
+                if (found !== undefined) {
+                    codePart.debugLog += `ERROR label already defined: This label was already defined at line ${found.origLine}. You can't have two labels with the same name.`;
+                    codePart.hasError = true;
+                    continue;
+                }
+
+                if (address < 0 || address >= 65536) {
+                    codePart.debugLog += `ERROR label address out of 16 bit range: The address of this label is out of the 16 bit address range.`;
+                    codePart.hasError = true;
+                    continue;
+                }
+
+                labels.push({"label": codePart.output, "address": address, "origLine": codePart.origLine});
+                codePart.debugLog += `This label is registered to address ${address}.\n`;
             } else {
-                type = "error";
-                hasError = true;
+                address++;
             }
-            parts.push({
-                type:type,
-                text:rawPart
-            });
         }
 
-        return {
-            i:i,
-            parts:parts,
-            error:hasError,
-            empty:false
-        };
-    }
-}
 
-class CompiledByte {
-    constructor(part, origLine, address) {
-        this.part = part; // {type:<instruction, address or byte>}
-        this.origLine = origLine;
-        this.address = address;
-        this.byteBin = "00000000";
-        this.byteInfo = `address: 0x${address.toString(16)}\nline number: ${origLine}\ntype: ${part.type}\nsource code: ${part.text}`;
-    }
-    compile(instructionSet, labels) {
-        if (this.part.type == "addressH" || this.part.type == "addressL") {
-            let address = undefined;
-            for (let i = 0; i < labels.length; i++) {
-                const label = labels[i];
-                if (label.name == this.part.text.slice(1)) {
-                    address = label.address
-                    break;
-                }
+        // convert text parts to 8-bit numbers, including addresses
+
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
+            if (codePart.hasError) {
+                continue;
             }
-            if (address === undefined) {
-                return {
-                    error:true,
-                    errorLine:this.origLine,
-                    errorText:"Could not find address for pointer"
-                }
-            }
-            if (this.part.type == "addressH") {
-                this.byteBin = convertToByte(Math.floor(address/256));
-            } else { // address L
-                this.byteBin = convertToByte(address%256);
-            }
-        } else if (this.part.type == "instruction") {
-            let foundInstruction = undefined
-            for (let i = 0; i < instructionSet.instructions.length; i++) {
-                const instruction = instructionSet.instructions[i];
-                if (instruction.name == this.part.text) {
-                    foundInstruction = instruction;
-                }
-            }
-            if (foundInstruction === undefined) {
-                return {
-                    error:true,
-                    errorLine:this.origLine,
-                    errorText:"Could not find instruction"
-                }
-            }
-            this.byteBin = convertToByte(foundInstruction.id);
-        } else if (this.part.type == "byte") {
-            let numText = this.part.text.slice(1);
-            let num;
-            switch (this.part.text[0]) {
-                case "%":
-                    if (!/^[0-1]{1,8}$/.test(numText)) {
-                        return {
-                            error:true,
-                            errorLine: this.origLine,
-                            errorText:"Binary value invalid or too large for single byte"
-                        }
-                    }
-                    this.byteBin = "0".repeat(Math.max(8-numText.length,0)) + numText
+
+            switch (codePart.type) {
+                case "invalid":
+                    codePart.debugLog += "ERROR oops invalid non-error codepart: This codepart is invalid, but the compiler tried to process it further anyway. Please report this.\n";
+                    codePart.hasError = true;
                     break;
                 
-                case "#":
-                    if (isNaN(parseInt(numText))) {
-                        return {
-                            error:true,
-                            errorLine: this.origLine,
-                            errorText:"Decimal value could not be parsed"
-                        }
+                case "instruction":
+                    const instruction = getInstrucion(codePart.origCode);
+                    if (instruction.isError) {
+                        codePart.debugLog += "ERROR oops instruction invalid: This instruction is invalid, but the compiler tried to process it further anyway. Please report this.\n";
+                        codePart.hasError = true;
+                        break;
                     }
-                    num = parseInt(numText)
-                    if (num < 0 || num >= 256) {
-                        return {
-                            error:true,
-                            errorLine: this.origLine,
-                            errorText:"Decimal value either negative or too large for single byte"
-                        }
+                    if (instruction.id < 0 || instruction.id >= 256) {
+                        codePart.debugLog += "ERROR oops instruction id out of range: This instruction has an invalid id, but the compiler tried to process it further anyway. Please report this.\n";
+                        codePart.hasError = true;
+                        break;
                     }
-                    this.byteBin = convertToByte(num);
+
+                    codePart.outputNum = instruction.id;
+                    codePart.output = instruction.id.toString(2);
+                    while(codePart.output.length < 8) {
+                        codePart.output = "0" + codePart.output;
+                    }
+                    break;
+                
+                case "address":
+                    codePart.debugLog += "ERROR oops forgot split address: The compiler forgot to split up this address into seperate bytes. Please report this.\n";
+                    codePart.hasError = true;
                     break;
 
-                case "$":
-                    if (isNaN(parseInt(numText, 16))) {
-                        return {
-                            error:true,
-                            errorLine: this.origLine,
-                            errorText:"Hexadecimal value could not be parsed"
-                        }
+                case "addressByte":
+                    let labelName = codePart.output.slice(0, -2);
+                    let hilo = codePart.output.slice(-1);
+                    if (labelName.length === 0 || (hilo !== "h" && hilo !== "l")) {
+                        codePart.debugLog + `ERROR oops invalid address byte: AddressByte "${codePart.output}" seems invalid. This is probably an actual syntax error in your code, but the compiler should have caught this earlier. Please report this.`;
+                        codePart.hasError = true;
+                        break;
                     }
-                    num = parseInt(numText, 16)
-                    if (num < 0 || num >= 256) {
-                        return {
-                            error:true,
-                            errorLine: this.origLine,
-                            errorText:"Hexadecimal value either negative or too large for single byte"
-                        }
+
+                    let label = labels.find(label=>label.label == labelName);
+                    if (label === undefined) {
+                        codePart.debugLog += `ERROR label not found: Could not find label "${labelName}". Perhaps you made a typo in the case sensitive label name, or your label decleration had an error.`;
+                        codePart.hasError = true;
+                        break;
                     }
-                    this.byteBin = convertToByte(num);
+
+                    if (label.address < 0 || label.address >= 65536) {
+                        codePart.debugLog += `ERROR oops address out of 16 bit range: The address of this label (defined on line #${label.origLine}) is out of the 16 bit range. The compiler should have caught this earlier. Please report this.\n`;
+                        codePart.hasError = true;
+                        break;
+                    }
+
+                    if (hilo == "h") {
+                        codePart.outputNum = Math.floor(label.address / 256);
+                    } else {
+                        codePart.outputNum = label.address % 256;
+                    }
+                    if (codePart.outputNum < 0 || codePart.outputNum >= 256) {
+                        codePart.debugLog += `ERROR oops address byte out of range: Converting this label number to byte parts resulted in a byte out of range. Please report this.\n`;
+                        codePart.hasError = true;
+                        break;
+                    }
+
+                    codePart.debugLog += `This addressByte was converted to binary. Note that this byte is just half of an address.\n`;
+                    codePart.output = codePart.outputNum.toString(2);
+                    while(codePart.output.length < 8) {
+                        codePart.output = "0" + codePart.output;
+                    }
+                    break;
+                
+                case "label":
+                    codePart.debugLog += `Labels themselves don't actually get stored in the program output.\n`;
                     break;
 
-                case "@":
-                    let address = undefined;
-                    for (let i = 0; i < labels.length; i++) {
-                        const label = labels[i];
-                        if (label.name == numText.slice(0, -2)) {
-                            address = label.address
-                            break;
-                        }
+                case "byte":
+                    let num = Number(codePart.output);
+
+                    if (num === undefined || isNaN(num)) {
+                        codePart.debugLog += `ERROR byte invalid syntax: Could not interperet this byte/number. Check the syntax.\n`;
+                        codePart.hasError = true;
+                        break;
                     }
-                    if (address === undefined) {
-                        return {
-                            error:true,
-                            errorLine:this.origLine,
-                            errorText:"Could not find address for pointer"
-                        }
+
+                    if (num < 0 || num >= 256) {
+                        codePart.debugLog += `ERROR byte out of range: This number (${num}) is outside the range of numbers that fit in an unsigned 8bit integer. If you tried entering a negative number, those aren't yet supported in the compiler, so you will have to apply 2's complement manually.\n`;
+                        codePart.hasError = true;
+                        break;
                     }
-                    if (numText.slice(-2) == ".h") {
-                        this.byteBin = convertToByte(Math.floor(address/256));
-                    } else { // address L
-                        this.byteBin = convertToByte(address%256);
+
+                    codePart.outputNum = num;
+                    codePart.output = num.toString(2);
+                    while(codePart.output.length < 8) {
+                        codePart.output = "0" + codePart.output;
                     }
                     break;
 
                 default:
-                    return {
-                        error:true,
-                        errorLine: this.origLine,
-                        errorText:"Invalid value datatype in CompiledByte.parse. This is a bug, please report."
-                    }
                     break;
             }
-        } else if (this.part.type == "error") {
-            return {
-                error:true,
-                errorLine: this.origLine,
-                errorText:"Could not parse part"
-            } 
-        } else {
-            return {
-                error:true,
-                errorLine: this.origLine,
-                errorText:"Invalid part type."
-            }    
         }
-        return {
-            error:false
-        }
-    }
-}
 
-class InstructionType {
-    constructor(name, id, args) {
-        this.name = name;
-        this.id = id;
-        this.args = args;
-    }
-}
+        let newHTML = `<table>`;
 
-class InstructionSet {
-    constructor(instructions) {
-        this.instructions = instructions;
-    }
-    checkInstruction(parts) {
-        let foundInstruction = undefined
-        for (let i = 0; i < this.instructions.length; i++) {
-            const instruction = this.instructions[i];
-            if (instruction.name == parts[0].text) {
-                foundInstruction = instruction;
-            }
-        }
-        if (foundInstruction === undefined) {
-            return {
-                error:true,
-                errorList:["Could not find instruction " + parts[0].text]
-            }
-        }
-        let argErrors = []; // strings giving error descriptions
-        let args = parts.slice(1);
-        let givArgI = 0;
-        let expArgI = 0;
-        while (givArgI < args.length || expArgI < foundInstruction.args.length) {
-            if (foundInstruction.args[expArgI] === undefined) {
-                argErrors.push("Error on argument " + expArgI.toString() + ": Too many arguments");
-            } else if (args[givArgI] === undefined) {
-                argErrors.push("Error on argument " + expArgI.toString() + ": Not enaugh arguments, expected " + foundInstruction.args[expArgI]);
-            } else {
-                switch (foundInstruction.args[expArgI]) {
-                    case "address":
-                        if (args[givArgI].type == "addressH") {
-                            givArgI ++; // to skip the addressL
-                        } else if (args[givArgI].type == "byte") {
-                            argErrors.push("Error on argument " + expArgI.toString() + ": Got a byte, expected a pointer")
-                        } else if (args[givArgI].type == "byte") {
-                            argErrors.push("Error on argument " + expArgI.toString() + ": Got a instruction, expected a pointer")
-                        }
-                        break;
-                    case "byte":
-                        if (args[givArgI].type == "addressH") {
-                            argErrors.push("Error on argument " + expArgI.toString() + ": Got a pointer, expected a byte")
-                            givArgI ++; // to skip the addressL
-                        } else if (args[givArgI].type == "byte") {
-                            // good
-                        } else if (args[givArgI].type == "byte") {
-                            argErrors.push("Error on argument " + expArgI.toString() + ": Got a instruction, expected a byte")
-                        }
-                        break;
-                    default:
-                        argErrors.push("Error on argument " + expArgI.toString() + ": Not recognized expected argument type. This is a bug, contact CM4")
-                        break;
-                }
-            }
-            givArgI ++;
-            expArgI ++;
-        }
-        return {
-            error:argErrors.length >= 1,
-            errorList:argErrors
-        }
-    }
-}
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
 
-function convertToByte(num) {
-    let out = num.toString(2);
-    out = "0".repeat(Math.max(8-out.length,0)) + out;
-    return out;
+            if (codePart.hasError) {
+                let firstError = codePart.debugLog.split("\n").find((line)=>line.indexOf("ERROR") != -1);
+                codePart.output += ` ${firstError.substring(0, firstError.indexOf(":"))}`;
+            }
+
+            if (codePart.type == "label") {
+                codePart.output += ":";
+            }
+
+            if (codePart.address === undefined) {
+                codePart.address = "";
+            }
+
+            newHTML+= `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output}</td></tr>`
+        }
+
+        newHTML += `</table>`;
+        this.output.innerHTML = newHTML;
+    }
 }

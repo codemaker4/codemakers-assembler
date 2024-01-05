@@ -10,7 +10,7 @@ body {
   grid-template-areas: 
     "controlPanel controlPanel"
     "code output";
-  grid-template-columns: auto 16em;
+  grid-template-columns: auto 30em;
   grid-template-rows: 2em auto;
 }
 
@@ -36,7 +36,6 @@ body {
   border-style: solid;
   border-color: gray;
   overflow: auto;
-  word-break: break-word;
   position: sticky;
   left: 0;
   background-color: #222;
@@ -47,8 +46,11 @@ body {
 }
 
 #binOut {
-  width: fit-content;
-  margin: auto;
+  margin: 0 0.5em;
+}
+
+#binOut td:first-child {
+  width:3em;
 }
 
 .inputContainer {

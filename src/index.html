@@ -5,11 +5,13 @@
     <title>Hello World!</title>
     <link rel="stylesheet" href="index.css">
     <script src="qrcodejs/qrcode.js"></script>
+    <script src="instructions.js"></script>
+    <script src="codePart.js"></script>
     <script src="compiler.js"></script>
   </head>
   <body>
     <div class="controlPanel">
-      <button onclick="compiler.compileFull();">compile</button>
+      <button onclick="compiler.compile();">compile</button>
       <button onclick="compiler.startMakeQR();" id="makeQRbutton">make QR code</button>
     </div>
     <div class="codeContainer">
@@ -22,11 +24,11 @@
           STA - write<br>
           HLT - stop<br>
           <br>
-          :readLocation<br>
-          #12<br>
+          readLocation:<br>
+          12<br>
           <br>
-          :writeLocation<br>
-          #0<br>
+          writeLocation:<br>
+          0<br>
         </p>
       </div>
     </div>
