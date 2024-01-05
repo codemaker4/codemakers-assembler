@@ -24,7 +24,9 @@ class CodePart {
         } else if (/^(0b|0x|)[0-9a-fA-F]+$/.test(origCode)) {
             this.type = "byte";
             this.output = origCode;
-
+        } else if (/^#.*$/.test(origCode)) {
+            this.type = "macro";
+            this.output = origCode.slice(1);
         } else {
             this.type = "invalid";
             this.output = origCode;

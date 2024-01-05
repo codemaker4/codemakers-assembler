@@ -289,6 +289,11 @@ class Compiler {
                         codePart.output = "0" + codePart.output;
                     }
                     break;
+                
+                case "macro":
+                    codePart.debugLog += "ERROR oops forgot process macro: The compiler forgot to process and remove this macro. Please report this.\n";
+                    codePart.hasError = true;
+                    break;
 
                 default:
                     break;
