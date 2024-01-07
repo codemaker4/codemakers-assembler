@@ -10,9 +10,6 @@ window.onload = () => {
         document.getElementById("input"),
         document.getElementById("binOut")
     );
-    document.getElementById("qrcode").onclick = () => {
-        document.getElementById("qrcode").style.display = "none";
-    }
 
     doLineNumbers();
     compiler.compile();
