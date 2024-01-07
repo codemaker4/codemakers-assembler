@@ -55,8 +55,6 @@ class Compiler {
             .replace(/&.{0,4};/g, "") // remove HTML char codes
             .split("\n"); // and split per newline
 
-        console.log(sourceCodeLines);
-
         this.codeParts = [];
 
         for (let lineNumber = 0; lineNumber < sourceCodeLines.length; lineNumber++) {
