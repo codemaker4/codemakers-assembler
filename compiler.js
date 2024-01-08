@@ -63,14 +63,23 @@ class Compiler {
                 line = line.slice(0, line.indexOf('-'));
             }
 
+            if (line.length == 0) {continue}
+
             while (line[0] == " ") {
                 line = line.slice(1);
             }
-    
-            let partTexts = line.split(" ");
-            for (let i = 0; i < partTexts.length; i++) {
-                if (partTexts[i].length > 0) {
-                    this.codeParts.push(new CodePart(lineNumber, partTexts[i]));
+
+            if (line.length == 0) {continue}
+
+            // macros take up an entire line and can have spaces, so remove them here.
+            if (line[0] == "#") {
+                this.codeParts.push(new CodePart(lineNumber, line));
+            } else {
+                let partTexts = line.split(" ");
+                for (let i = 0; i < partTexts.length; i++) {
+                    if (partTexts[i].length > 0) {
+                        this.codeParts.push(new CodePart(lineNumber, partTexts[i]));
+                    }
                 }
             }
         }
