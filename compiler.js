@@ -154,6 +154,7 @@ class Compiler {
 
 
         // process and save addresses of label parts and calculate memory addresses of other codeParts.
+        // also process skipto macros
 
         let labels = []; // [{label: name, address: address, origLine: origLine}]
         let address = 0;
@@ -183,6 +184,46 @@ class Compiler {
 
                 labels.push({"label": codePart.output, "address": address, "origLine": codePart.origLine});
                 codePart.debugLog += `This label is registered to address ${address}.\n`;
+
+            } else if (codePart.type == "macro") {
+                let macroParts = codePart.output.split(" ");
+                if (macroParts[0] === "SKIPTO") {
+                    codePart.debugLog += `Processing this SKIPTO macro in the address calculation phase...\n`;
+
+                    if (macroParts.length != 2) {
+                        codePart.debugLog += `ERROR skipto argument count: Skipto expects one argument with the address to skip to, but got ${macroParts.length - 1} arguments instead.\n`;
+                        codePart.hasError = true;
+                        continue;
+                    }
+
+                    let newAddress = Number(macroParts[1]);
+                    if (isNaN(newAddress)) {
+                        codePart.debugLog += `ERROR skipto address not a number: Skipto expects one number argument with the address to skip to, but got "${macroParts[1]}" instead, which is not a valid number.\n`
+                        codePart.hasError = true;
+                        continue;
+                    }
+
+                    if (newAddress < 0 || newAddress >= 2**16) {
+                        codePart.debugLog += `ERROR skipto address out of range: The address ${newAddress} is not a number that fits in an unsigned 16 bit number, and is thus not supported by the SMPU.\n`;
+                        codePart.hasError = true;
+                        continue;
+                    }
+
+                    if (newAddress < address) {
+                        codePart.debugLog += `ERROR skipto lower address: This skipto macro tried to skip to the address ${newAddress}, but data was already written upto address ${address}. The program must be written in the same order that it ends up in the SMPU memory. Consider raising the address to skip to, or reducing the size of the previous code/data.\n`
+                        codePart.hasError = true;
+                        continue;
+                    }
+
+                    address = newAddress;
+
+                    if (this.codeParts[i+1] !== undefined) {
+                        this.codeParts[i+1].debugLog += `The skipto macro from line ${codePart.origLine} skipped the address of this byte to ${newAddress}\n`;
+                    }
+
+                    this.codeParts.splice(i, 1);
+                    i--;
+                }
             } else {
                 address++;
             }
