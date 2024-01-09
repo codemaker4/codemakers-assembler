@@ -166,18 +166,18 @@ class Compiler {
                 continue;
             }
 
+            if (address < 0 || address >= 65536) {
+                codePart.debugLog += `ERROR address out of range: The address of this codepart is out of the 16 bit address range. This usually means you made a mistake in memory management or you do not have enough memory.`;
+                codePart.hasError = true;
+                continue;
+            }
+
             codePart.address = address;
 
             if (codePart.type == "label") {
                 let found = labels.find((label)=>{label.label == codePart.output});
                 if (found !== undefined) {
                     codePart.debugLog += `ERROR label already defined: This label was already defined at line ${found.origLine}. You can't have two labels with the same name.`;
-                    codePart.hasError = true;
-                    continue;
-                }
-
-                if (address < 0 || address >= 65536) {
-                    codePart.debugLog += `ERROR label address out of 16 bit range: The address of this label is out of the 16 bit address range.`;
                     codePart.hasError = true;
                     continue;
                 }
