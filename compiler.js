@@ -1,7 +1,7 @@
 let compiler;
 
 window.onload = () => {
-    let sourceCode = localStorage.getItem("SMPU_assembler_opened_source_code");
+    let sourceCode = localStorage.getItem("SMPU_assembler_opened_source_code_v2");
     if (sourceCode) {
         document.getElementById("input").innerText = sourceCode;
     }
@@ -18,7 +18,7 @@ window.onload = () => {
     document.getElementById("input").onkeydown = () => {
         clearTimeout(processTimeout);
         processTimeout = setTimeout(() => {
-            localStorage.setItem("SMPU_assembler_opened_source_code", document.getElementById("input").innerText);
+            localStorage.setItem("SMPU_assembler_opened_source_code_v2", document.getElementById("input").innerText);
             doLineNumbers();
             compiler.compile();
             processTimeout = 0;
