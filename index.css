@@ -9,18 +9,52 @@ body {
   display: grid;
   grid-template-areas: 
     "controlPanel controlPanel"
+    "messagePanel messagePanel"
     "code output";
   grid-template-columns: auto 30em;
-  grid-template-rows: 2em auto;
+  grid-template-rows: 2em min-content auto;
 }
 
 .controlPanel {
   grid-area: controlPanel;
+  margin: 0;
+}
+
+.messagePanel {
+  grid-area: messagePanel;
   border-style: solid;
   border-color: gray;
   border-width: 0px;
   border-bottom-width: 5px;
   margin: 0;
+}
+
+.message {
+  width: 100%;
+  height: auto;
+  display: grid;
+  grid-template-areas: "messageContent messageCloseButton";
+  grid-template-columns: auto 2em;
+  grid-template-rows: auto;
+  border-style: solid;
+  border-color: gray;
+  border-width: 0px;
+  border-top-width: 5px;
+}
+
+.messageContent {
+  grid-area: messageContent;
+  margin: 0.2em;
+}
+
+.messageCloseButton {
+  grid-area: messageCloseButton;
+  background-color: #822;
+  color: white;
+  border: 0;
+  border-left-width: 5px;
+  border-style: solid;
+  border-color: gray;
 }
 
 .codeContainer {

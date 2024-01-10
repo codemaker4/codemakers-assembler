@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Hello World!</title>
     <link rel="stylesheet" href="index.css">
-    <script src="qrcodejs/qrcode.js"></script>
+    <script src="messages.js"></script>
     <script src="instructions.js"></script>
     <script src="codePart.js"></script>
     <script src="compiler.js"></script>
@@ -14,6 +14,12 @@
     <div class="controlPanel">
       <button onclick="compiler.compile();">compile</button>
       <button onclick="exportVincelingMem();">export to Vinceling memory</button>
+    </div>
+    <div class="messagePanel" id="messagePanel">
+      <div class="message">
+        <p class="messageContent">message test test test yay!</p>
+        <button class="messageCloseButton" onclick="closeMessage(this);">X</button>
+      </div>
     </div>
     <div class="codeContainer">
       <div class="inputContainer">
