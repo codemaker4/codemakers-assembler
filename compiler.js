@@ -369,4 +369,35 @@ class Compiler {
         newHTML += `</table>`;
         this.output.innerHTML = newHTML;
     }
+    export() {
+        let data = [];
+        let errorsShowed = 0;
+
+        for (let i = 0; i < this.codeParts.length; i++) {
+            const codePart = this.codeParts[i];
+
+            if (codePart.hasError) {
+                alert(`Cannot export: Your code has errors! The codepart "${codePart.origCode}" from line ${codePart.origLine} has errors. Hover over the compiler output.`);
+                return []
+            }
+
+            if (codePart.type == "label" || codePart.type == "macro") {
+                continue;
+            }
+
+            if (codePart.outputNum === undefined || codePart.outputNum < 0 || codePart.outputNum >= 2**8) {
+                alert("Cannot export: Invalid byte found! This is a mistake of the compiler.");
+                return [];
+            }
+
+            if (codePart.address === undefined || codePart.address < 0 || codePart.address >= 2**16) {
+                alert("Cannot export: Invalid address found! This is a mistake of the compiler.");
+                return [];
+            }
+
+            data.push([codePart.address, codePart.outputNum]);
+        }
+
+        return data;
+    }
 }
