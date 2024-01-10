@@ -1,8 +1,0 @@
-- parse text and split to parts, keep track of source line numbers, give errors for invalid part syntax
-- process pseudo instructions into real assembly and split pointers into H and L byte parts
-- check if instructions exist and have correct number of byte arguments and arguments are on same source line as instruction
-- process and save addresses of label parts, removing them from the memory on the way. Now the memory setup is final.
-- convert text parts to binary, including pointers
-
-
-TODO add memory mapping skip or smth
