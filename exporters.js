@@ -16,9 +16,9 @@ function download(filename, text) {
 function exportVincelingMem() {
     let data = compiler.export();
     if (data === undefined || data.length == 0) {
-        alert("Export failed")
         return;
     }
 
     download("data.json", JSON.stringify(data));
+    postMessage(`Export successfull! Exported ${data.length} bytes.\nPlease put this file in steam/steamapps/workshop/content/387990/2817316401/data.json.`)
 }

@@ -40,6 +40,7 @@ class Compiler {
         this.input = input;
         this.output = output;
         this.codeParts = [];
+        this.compileMessage = undefined;
     }
 
     /* Compiles the code in the given input element, and puts compiled binary in the output
@@ -346,13 +347,18 @@ class Compiler {
         }
 
         let newHTML = `<table>`;
+        let compileMessage = "";
 
         for (let i = 0; i < this.codeParts.length; i++) {
             const codePart = this.codeParts[i];
 
             if (codePart.hasError) {
                 let firstError = codePart.debugLog.split("\n").find((line)=>line.indexOf("ERROR") != -1);
-                codePart.output += ` ${firstError.substring(0, firstError.indexOf(":"))}`;
+                let firstErrorName = firstError.substring(0, firstError.indexOf(":"));
+                codePart.output += ` ${firstErrorName}`;
+                if (!compileMessage) {
+                    compileMessage = `Compiled with at least one error. The first one is from line ${codePart.origLine} at address ${codePart.address}: ${firstErrorName}`;
+                }
             }
 
             if (codePart.type == "label") {
@@ -366,6 +372,12 @@ class Compiler {
             newHTML+= `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output}</td></tr>`
         }
 
+        if (!compileMessage) {
+            compileMessage = `Compiled without errors.`;
+        }
+
+        this.compileMessage = editMessage(this.compileMessage, compileMessage);
+
         newHTML += `</table>`;
         this.output.innerHTML = newHTML;
     }
@@ -377,7 +389,7 @@ class Compiler {
             const codePart = this.codeParts[i];
 
             if (codePart.hasError) {
-                alert(`Cannot export: Your code has errors! The codepart "${codePart.origCode}" from line ${codePart.origLine} has errors. Hover over the compiler output.`);
+                postMessage(`Cannot export: Your code has errors! The codepart "${codePart.origCode}" from line ${codePart.origLine} has errors. Hover over the compiler output.`);
                 return []
             }
 
@@ -386,12 +398,12 @@ class Compiler {
             }
 
             if (codePart.outputNum === undefined || codePart.outputNum < 0 || codePart.outputNum >= 2**8) {
-                alert("Cannot export: Invalid byte found! This is a mistake of the compiler.");
+                postMessage("Cannot export: Invalid byte found! This is a mistake of the compiler.");
                 return [];
             }
 
             if (codePart.address === undefined || codePart.address < 0 || codePart.address >= 2**16) {
-                alert("Cannot export: Invalid address found! This is a mistake of the compiler.");
+                postMessage("Cannot export: Invalid address found! This is a mistake of the compiler.");
                 return [];
             }
 
