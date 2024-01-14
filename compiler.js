@@ -120,28 +120,43 @@ class Compiler {
                     continue;
                 }
 
-                if (instruction.requiredArgs.length == 0) {
-                    codePart.debugLog += `This instruction requires no arguments.\n`;
-                    continue;
+                if (i - 1 >= 0 && this.codeParts[i - 1].origLine === codePart.origLine) {
+                    codePart.debugLog += `ERROR instruction not at start of line: Instructions must be on their own line of code.\n`;
+                    codePart.hasError = true;
                 }
 
                 for (let j = 0; j < instruction.requiredArgs.length; j++) {
                     i++;
-                    if (this.codeParts[i] === undefined || codePart.origLine !== this.codeParts[i].origLine) {
-                        codePart.debugLog += `ERROR argument missing: The instruction "${instruction.short}" requires ${instruction.requiredArgs.length} arguments, but only ${j} arguments were given. Arguments of instructions need to be on the same line of code as the original instruction.\n`;
+                    if (i >= this.codeParts.length && this.codeParts[i].origLine !== codePart.origLine) {
+                        codePart.debugLog += `ERROR not enough arguments: The ${instruction.short} instruction requires ${instruction.requiredArgs.length} arguments, but only ${j - 1} where given.\n`;
                         codePart.hasError = true;
+                        i--;
                         break;
                     }
+
                     if (this.codeParts[i].hasError) {
-                        codePart.debugLog += `ERROR argument has error: The instruction "${instruction.short}" requires ${instruction.requiredArgs.length} arguments, but argument number ${j + 1} has had an error in previous steps of the compilation.\n`;
+                        codePart.debugLog += `ERROR argument has error: The argument #${j + 1} "${this.codeParts[i].origCode}" has an error: "${this.codeParts[i].debugLog.split("\n").slice(-1)}".\n`;
                         codePart.hasError = true;
                         continue;
                     }
-                    if (instruction.requiredArgs[j] !== this.codeParts[i].type) {
-                        codePart.debugLog += `ERROR argument wrong type: The instruction "${instruction.short}" got the wrong type of argument. Argument number ${j} is supposed to be of type "${instruction.requiredArgs[j]}", but an argument of type ${this.codeParts[i].type} was found instead. This is what that argument looked like: "${this.codeParts[i].origCode}.\n"`;
+
+                    this.codeParts[i].debugLog += `This is argument #${j + 1} of the ${instruction.short} instruction from line ${codePart.origLine}.\n`;
+
+                    if (this.codeParts[i].type !== instruction.requiredArgs[j]) {
+                        codePart.debugLog += `ERROR wrong argument type: The ${instruction.short} instruction requires an argument of type ${instruction.requiredArgs[j]}, but the argument "${this.codeParts[i].origCode}" is of type ${this.codeParts[i].type}.\n`;
                         codePart.hasError = true;
+                        this.codeParts[i].debugLog += `ERROR this is wrong argument type: The ${instruction.short} instruction from line ${codePart.origLine} requires an argument of type ${instruction.requiredArgs[j]} here, but this argument is of type ${this.codeParts[i].type}.\n`;
+                        this.codeParts[i].hasError = true;
                         continue;
                     }
+                }
+
+                if (i + 1 < this.codeParts.length && this.codeParts[i + 1].origLine == codePart.origLine) {
+                    codePart.debugLog += `ERROR too many arguments: The ${instruction.short} instruction requires ${instruction.requiredArgs.length} arguments, but mure arguments were given. Instructions must have their own line which only has the required arguments. Data and instructions that come after must have their own line.\n`;
+                    codePart.hasError = true;
+                    this.codeParts[i + 1].debugLog += `ERROR this is an excess argument: The ${instruction.short} instruction from line ${codePart.origLine} requires ${instruction.requiredArgs.length} arguments, and those were already given. Stuff that comes after must be on a new line.\n`;
+                    this.codeParts[i + 1].hasError = true;
+                    continue;
                 }
 
                 if (!codePart.hasError) {
