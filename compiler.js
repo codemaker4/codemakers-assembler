@@ -178,6 +178,7 @@ class Compiler {
         for (let i = 0; i < this.codeParts.length; i++) {
             const codePart = this.codeParts[i];
             if (codePart.hasError) {
+                codePart.address = address;
                 address++;
                 continue;
             }
