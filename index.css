@@ -7,7 +7,7 @@ body {
   font-size: x-large;
   font-family: monospace;
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     "controlPanel controlPanel"
     "messagePanel messagePanel"
     "code output";
@@ -84,7 +84,7 @@ body {
 }
 
 #binOut td:first-child {
-  width:3em;
+  width: 3em;
 }
 
 .inputContainer {
@@ -93,7 +93,7 @@ body {
   overflow: visible;
   margin: 0;
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     "lineNumbers codeInput";
   grid-template-columns: 2em auto;
 }
@@ -129,4 +129,132 @@ body {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #888;
+}
+
+.emulator-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #333;
+  overflow-x: hidden;
+  transition: transform 0.5s ease-in-out;
+  height: 50vh;
+  /* Set constant height */
+  transform: translateY(100%);
+  /* Initially hidden */
+
+  /* make elements line up in one row */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  align-content: stretch;
+}
+
+/* make elements of emulator drawer be all 25% */
+.emulator-drawer>* {
+  flex: 1 1 25%;
+  /* grow, shrink, basis */
+  overflow: auto;
+  /* make elements scrollable */
+}
+
+.emulator-drawer.expanded {
+  transform: translateY(0);
+  /* Slide up to show */
+}
+
+.registers {
+  /* font-family: Arial, sans-serif; */
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.registers th,
+.registers td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: right;
+}
+
+.registers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background-color: #333;
+  color: white;
+}
+
+
+/* Zebra stripe rows for better readability */
+.registers tr:nth-child(even) {
+  background-color: #222;
+}
+
+/* Hover effect for rows */
+.registers tr:hover {
+  background-color: #444;
+}
+
+.memory {
+  overflow-y: auto;
+  /* If you want a scrollable memory display */
+  max-height: 100px;
+  /* Adjust as needed */
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked+.slider {
+  background-color: #2196F3;
+}
+
+input:focus+.slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked+.slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
 }

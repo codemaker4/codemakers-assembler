@@ -11,6 +11,7 @@ class SMPU {
             'c': 0,
         };
         this.devices = [];
+        this.halted = false;
     }
 
     getValue(register) {
@@ -58,6 +59,7 @@ class SMPU {
         }
         let status = true;
         if (readFrom.length === 0) {
+            this.halted = true;
             debugMessages = ['FATAL: No devices read from at address ' + addr + '. SMPU would hang here'];
             status = false;
         }
@@ -77,6 +79,7 @@ class SMPU {
             debugMessages.push('WARN: Multiple devices wrote to at address ' + addr + '. assuming simeltaneous output, but this is likely not the case');
         }
         if (wroteTo.length === 0) {
+            this.halted = true;
             debugMessages.push('FATAL: No devices wrote to at address ' + addr + '. SMPU would hang here');
             status = false;
         }
@@ -104,6 +107,9 @@ class SMPU {
     }
 
     clock() {
+        if (this.halted) {
+            return [[], false];
+        }
         let prun = this.getValue('p');
         let out = this.pullAtProgramCounter();
         let instruction = out[0];
@@ -133,6 +139,7 @@ class SMPU {
         let h;
         switch (instruction) {
             case 0: // HLT
+                this.halted = true;
                 return [['INFO: Halting'], false];
             case 1: // NOP
                 return [[], true];
@@ -415,6 +422,7 @@ class SMPU {
                 return [debugMessages, l[2] && h[2]];
 
             default:
+                this.halted = true;
                 return [['FATAL: Invalid instruction ' + instruction + '. SMPU would hang here'], false];
         }
     }
@@ -423,42 +431,162 @@ class SMPU {
 function shouldIgnore(addr, highBits) {
     // check if the high bits of addr are equal to highBits (i.e. addr starts with highBits)
     // if so, return false, otherwise return true
-
+    let addrBinary = addr.toString(2).padStart(16, '0');
+    return addrBinary.slice(0, highBits.length) !== highBits;
 }
 
 class ReadWriteMemory {
     constructor(nbits) {
+        this.nbits = nbits;
         this.memory = new Uint8Array(2 ** nbits);
     }
     read(address) {
         return [this.memory[address % 0xFF], true];
     }
     write(address, value) {
-        this.memory[address % 0xFF] = value;
+        this.memory[address % (2 ** this.nbits)] = value;
         return true;
+    }
+    reset() {
+        this.memory = new Uint8Array(this.memory.length);
     }
 }
 
-function runBasicEmulation() {
-    let smpu = new SMPU();
-    let memory = new ReadWriteMemory(6);
+class RangeLimiter {
+    constructor(device, rangeLimit, highBits) {
+        this.device = device;
+        this.rangeLimit = rangeLimit;
+        this.highBits = highBits;
+    }
+    read(address) {
+        if (!this.rangeLimit) {
+            return this.device.read(address);
+        }
+        if (shouldIgnore(address, this.highBits)) {
+            return [0, false];
+        }
+        return this.device.read(address);
+    }
+    write(address, value) {
+        if (!this.rangeLimit) {
+            return this.device.write(address, value);
+        }
+        if (shouldIgnore(address, this.highBits)) {
+            return false;
+        }
+        return this.device.write(address, value);
+    }
+    reset() {
+        this.device.reset();
+    }
+}
+
+// function runBasicEmulation() {
+//     let smpu = new SMPU();
+//     let memory = new ReadWriteMemory(6);
+//     let data = compiler.export();
+//     if (data === undefined || data.length == 0) {
+//         return;
+//     }
+//     for (let i = 0; i < data.length; i++) {
+//         const byte = data[i];
+//         memory.write(byte[0], byte[1]);
+//     }
+//     smpu.mount(memory);
+//     let debugMessages = [];
+//     let status = true;
+//     while (status) {
+//         let out = smpu.clock();
+//         for (let i = 0; i < out[0].length; i++) {
+//             debugMessages.push(out[0][i]);
+//         }
+//         status = out[1];
+//     }
+//     return debugMessages;
+// }
+
+function toggleEmulatorDrawer() {
+    var drawer = document.getElementById
+        ("emulator-drawer");
+    drawer.classList.toggle('expanded');
+}
+
+let clockInterval = null;
+let smpu = new SMPU();
+let devices = [
+    {
+        device: new ReadWriteMemory(6),
+        rangeLimit: false,
+        highBits: "0000000000",
+    }
+];
+
+function restartEmulator() {
+    if (clockInterval !== null) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+    }
+    smpu = new SMPU();
+    for (let i = 0; i < devices.length; i++) {
+        let device = devices[i].device;
+        device.reset()
+    }
+    for (let i = 0; i < devices.length; i++) {
+        const limiter = new RangeLimiter(devices[i].device, devices[i].rangeLimit, devices[i].highBits);
+        smpu.mount(limiter);
+    }
+    // write compiled code to memory
     let data = compiler.export();
     if (data === undefined || data.length == 0) {
         return;
     }
     for (let i = 0; i < data.length; i++) {
         const byte = data[i];
-        memory.write(byte[0], byte[1]);
+        smpu.writeDevices(byte[0], byte[1]);
     }
-    smpu.mount(memory);
-    let debugMessages = [];
-    let status = true;
-    while (status) {
-        let out = smpu.clock();
-        for (let i = 0; i < out[0].length; i++) {
-            debugMessages.push(out[0][i]);
-        }
-        status = out[1];
+}
+
+// restartEmulator();
+
+function runOneClock() {
+    let out = smpu.clock();
+    updateDisplay();
+    const debugConsole = document.getElementById('debugConsole');
+    for (let i = 0; i < out[0].length; i++) {
+        debugConsole.innerText += out[0][i] + '\n';
     }
-    return debugMessages;
+    let status = out[1];
+    if (!status && clockInterval !== null) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+    }
+}
+
+
+function autoClock() {
+    if (clockInterval === null) {
+        clockInterval = setInterval(runOneClock, 10);
+    } else {
+        clearInterval(clockInterval);
+        clockInterval = null;
+    }
+}
+
+function updateDisplay() {
+    document.getElementById('register-A').innerHTML = smpu.getValue('a');
+    document.getElementById('register-A-bin').innerHTML = smpu.getValue('a').toString(2).padStart(8, '0');
+    document.getElementById('register-B').innerHTML = smpu.getValue('b');
+    document.getElementById('register-B-bin').innerHTML = smpu.getValue('b').toString(2).padStart(8, '0');
+    document.getElementById('register-Q').innerHTML = smpu.getValue('q');
+    document.getElementById('register-Q-bin').innerHTML = smpu.getValue('q').toString(2).padStart(8, '0');
+    document.getElementById('register-H').innerHTML = smpu.getValue('h');
+    document.getElementById('register-H-bin').innerHTML = smpu.getValue('h').toString(2).padStart(8, '0');
+    document.getElementById('register-L').innerHTML = smpu.getValue('l');
+    document.getElementById('register-L-bin').innerHTML = smpu.getValue('l').toString(2).padStart(8, '0');
+    document.getElementById('register-P').innerHTML = smpu.getValue('p');
+    document.getElementById('register-P-bin').innerHTML = smpu.getValue('p').toString(2).padStart(16, '0');
+    document.getElementById('register-S').innerHTML = smpu.getValue('s');
+    document.getElementById('register-S-bin').innerHTML = smpu.getValue('s').toString(2).padStart(8, '0');
+    document.getElementById('register-C').innerHTML = smpu.getValue('c');
+    document.getElementById('register-C-bin').innerHTML = smpu.getValue('c').toString(2).padStart(1, '0');
 }
