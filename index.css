@@ -7,7 +7,7 @@ body {
   font-size: x-large;
   font-family: monospace;
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     "controlPanel controlPanel"
     "messagePanel messagePanel"
     "code output";
@@ -18,6 +18,9 @@ body {
 .controlPanel {
   grid-area: controlPanel;
   margin: 0;
+  padding: 5px;
+  padding-top: 1px;
+  /* margin-left: 5px; */
 }
 
 .messagePanel {
@@ -84,7 +87,7 @@ body {
 }
 
 #binOut td:first-child {
-  width:3em;
+  width: 3em;
 }
 
 .inputContainer {
@@ -93,7 +96,7 @@ body {
   overflow: visible;
   margin: 0;
   display: grid;
-  grid-template-areas: 
+  grid-template-areas:
     "lineNumbers codeInput";
   grid-template-columns: 2em auto;
 }
@@ -129,4 +132,139 @@ body {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #888;
+}
+
+.emulator-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #333;
+  overflow-x: hidden;
+  transition: transform 0.5s ease-in-out;
+  height: 400px;
+  /* Set constant height */
+  transform: translateY(100%);
+  /* Initially hidden */
+
+  /* make elements line up in one row */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  align-content: stretch;
+}
+
+/* make elements of emulator drawer be all 25% */
+.emulator-drawer>* {
+  flex: 1 1 25%;
+  /* grow, shrink, basis */
+  overflow: auto;
+  /* make elements scrollable */
+  border: 1px solid #888;
+  padding: 10px;
+}
+
+.emulator-drawer.expanded {
+  transform: translateY(0);
+  /* Slide up to show */
+}
+
+.dataTable {
+  /* font-family: Arial, sans-serif; */
+  border-collapse: collapse;
+  /* width: 100%; */
+  margin: 0;
+}
+
+.dataTable th,
+.dataTable td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: right;
+}
+
+.dataTable th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background-color: #333;
+  color: white;
+}
+
+/* Zebra stripe rows for better readability */
+.dataTable tr:nth-child(even) {
+  background-color: #222;
+}
+
+/* Hover effect for rows */
+.dataTable tr:hover {
+  background-color: #444;
+}
+
+.device-card {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
+  margin-left: 0;
+}
+
+.text-button {
+  cursor: pointer;
+  float: right;
+}
+
+#debugConsole {
+  /* margin-left: 10px; */
+  margin: 0;
+}
+
+.darkZero {
+  color: #666;
+}
+
+button {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  /* margin: 0px; */
+  margin-top: 5px;
+  /* margin-left: 0; */
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #444;
+}
+
+input {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
+}
+
+select {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
+}
+
+input:disabled {
+  background-color: #222;
+  color: #666;
+}
+
+#clockIcon {
+  font-size: 1.5em;
 }
