@@ -590,7 +590,7 @@ function restartEmulator() {
         smpu.writeDevices(byte[0], byte[1]);
     }
     // clear debug console
-    document.getElementById('debugConsole').innerText = '[INFO] Emulator restarted\n';
+    document.getElementById('debugConsole').innerText = 'INFO: Emulator restarted\n';
     // reset clock icon
     clockIndex = 0;
     document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
@@ -712,6 +712,9 @@ function createDeviceWithType(deviceType) {
     highBits.disabled = true;
     highBits.placeholder = 'High bits';
     highBits.onchange = function () {
+        // limit to allowed characters (0 and 1)
+        let value = rangeLimit.checked ? highBits.value.replace(/[^01]/g, '') : '';
+        highBits.value = value;
         device.setHighBits(highBits.value);
     }
     card.appendChild(highBits);
@@ -721,6 +724,10 @@ function createDeviceWithType(deviceType) {
     devices.push(device);
     updateDisplay();
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    createDeviceWithType('memory');
+});
 
 function autoClock() {
     if (clockInterval === null) {

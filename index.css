@@ -18,6 +18,7 @@ body {
 .controlPanel {
   grid-area: controlPanel;
   margin: 0;
+  padding: 5px;
   /* margin-left: 5px; */
 }
 
@@ -140,7 +141,7 @@ body {
   background-color: #333;
   overflow-x: hidden;
   transition: transform 0.5s ease-in-out;
-  height: 60vh;
+  height: 400px;
   /* Set constant height */
   transform: translateY(100%);
   /* Initially hidden */
@@ -161,6 +162,7 @@ body {
   overflow: auto;
   /* make elements scrollable */
   border: 1px solid #888;
+  padding: 10px;
 }
 
 .emulator-drawer.expanded {
@@ -172,7 +174,7 @@ body {
   /* font-family: Arial, sans-serif; */
   border-collapse: collapse;
   /* width: 100%; */
-  margin: 10px;
+  margin: 0;
 }
 
 .dataTable th,
@@ -215,7 +217,8 @@ body {
 }
 
 #debugConsole {
-  margin-left: 10px;
+  /* margin-left: 10px; */
+  margin: 0;
 }
 
 .darkZero {
@@ -228,7 +231,7 @@ button {
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 5px;
-  margin: 5px;
+  margin: 0px;
   /* margin-left: 0; */
   cursor: pointer;
 }
@@ -253,4 +256,13 @@ select {
   border-radius: 5px;
   padding: 5px;
   margin: 5px;
+}
+
+input:disabled {
+  background-color: #222;
+  color: #666;
+}
+
+#clockIcon {
+  font-size: 1.5em;
 }
