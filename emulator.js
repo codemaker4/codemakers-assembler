@@ -376,7 +376,7 @@ class SMPU {
                 return [debugMessages, status];
             case 44: // SUBR
                 debugMessages = [];
-                out = this.writeDevices(this.getValue('s') + 0xFF00, this.getValue('p') / 256);
+                out = this.writeDevices(this.getValue('s') + 0xFF00, Math.floor(this.getValue('p') / 256));
                 for (let i = 0; i < out[0].length; i++) {
                     debugMessages.push(out[0][i]);
                 }
@@ -397,7 +397,7 @@ class SMPU {
                 this.setValue('p', this.getValue('r'));
                 return [debugMessages, status];
             case 45: // RET
-                // #pops the address of the last subroutine instruction, first L, then H is popped (reverse from pushing, 
+                // #pops the address of the last subroutine instruction, first L, then H is popped (reverse from pushing,
                 // because its a stack). puts into p (program counter)
                 debugMessages = [];
                 this.setValue('s', this.getValue('s') + 1);
@@ -405,18 +405,20 @@ class SMPU {
                     debugMessages.push('WARN: Stack pointer overflowed');
                 }
                 l = this.readDevices(this.getValue('s') + 0xFF00);
+                console.log(this.getValue('s'), l);
                 this.setValue('s', this.getValue('s') + 1);
                 if (this.getValue('s') === 0) {
                     debugMessages.push('WARN: Stack pointer overflowed');
                 }
                 h = this.readDevices(this.getValue('s') + 0xFF00);
-                this.setValue('p', h * 256 + l);
+                console.log(this.getValue('s'), h);
                 for (let i = 0; i < l[1].length; i++) {
                     debugMessages.push(l[1][i]);
                 }
                 for (let i = 0; i < h[1].length; i++) {
                     debugMessages.push(h[1][i]);
                 }
+                this.setValue('p', h[0] * 256 + l[0]);
                 return [debugMessages, l[2] && h[2]];
 
             default:
@@ -439,7 +441,7 @@ class ReadWriteMemory {
         this.memory = new Uint8Array(2 ** nbits);
     }
     read(address) {
-        return [this.memory[address % 0xFF], true];
+        return [this.memory[address % (2 ** this.nbits)], true];
     }
     write(address, value) {
         this.memory[address % (2 ** this.nbits)] = value;
