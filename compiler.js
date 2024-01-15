@@ -373,7 +373,7 @@ class Compiler {
                 let firstErrorName = firstError.substring(0, firstError.indexOf(":"));
                 codePart.output += ` ${firstErrorName}`;
                 if (!compileMessage) {
-                    compileMessage = `Compiled with at least one error. The first one is from line ${codePart.origLine} at address ${codePart.address}: ${firstErrorName}`;
+                    compileMessage = `Assembled with at least one error. The first one is from line ${codePart.origLine} at address ${codePart.address}: ${firstErrorName}`;
                 }
             }
 
@@ -389,7 +389,7 @@ class Compiler {
         }
 
         if (!compileMessage) {
-            compileMessage = `Compiled without errors.`;
+            compileMessage = `Assembled without errors.`;
         }
 
         this.compileMessage = editMessage(this.compileMessage, compileMessage);
