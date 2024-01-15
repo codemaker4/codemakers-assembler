@@ -516,6 +516,12 @@ class RangeLimiter {
     setNewDevice(device) {
         this.device = device;
     }
+    setRangeLimitEnabled(rangeLimit) {
+        this.rangeLimit = rangeLimit;
+    }
+    setHighBits(highBits) {
+        this.highBits = highBits;
+    }
 }
 
 function toggleEmulatorDrawer() {
@@ -535,11 +541,11 @@ function restartEmulator() {
     }
     smpu = new SMPU();
     for (let i = 0; i < devices.length; i++) {
-        let device = devices[i].device;
+        let device = devices[i];
         device.reset()
     }
     for (let i = 0; i < devices.length; i++) {
-        smpu.mount(devices[i].device);
+        smpu.mount(devices[i]);
     }
     // write compiled code to memory
     let data = compiler.export();
@@ -625,9 +631,10 @@ function createDevice() {
         rangeLimit.type = 'checkbox';
         rangeLimit.id = 'rangeLimit';
         rangeLimit.checked = false;
+        let highBits = document.createElement('input');
         rangeLimit.onchange = function () {
-            let highBits = document.getElementById('highBits');
             highBits.disabled = !rangeLimit.checked;
+            device.setRangeLimitEnabled(rangeLimit.checked);
         }
         card.appendChild(rangeLimit);
         let rangeLimitLabel = document.createElement('label');
@@ -636,11 +643,13 @@ function createDevice() {
         card.appendChild(rangeLimitLabel);
         // add spacer
         card.appendChild(document.createElement('br'));
-        let highBits = document.createElement('input');
         highBits.type = 'text';
         highBits.id = 'highBits';
         highBits.disabled = true;
         highBits.placeholder = 'High bits';
+        highBits.onchange = function () {
+            device.setHighBits(highBits.value);
+        }
         card.appendChild(highBits);
         document.getElementById('devices').appendChild(card);
     }
