@@ -472,6 +472,18 @@ class ReadWriteMemory {
         }
         return table.outerHTML;
     }
+    setNBits(nbits) {
+        if (nbits === this.nbits) {
+            return;
+        }
+        this.nbits = nbits;
+        let newMemory = new Uint8Array(2 ** nbits);
+        for (let i = 0; i < Math.min(this.memory.length, newMemory.length); i++) {
+            newMemory[i] = this.memory[i];
+        }
+        this.memory = newMemory;
+        updateDisplay();
+    }
 }
 
 class RangeLimiter {
@@ -505,30 +517,6 @@ class RangeLimiter {
         this.device = device;
     }
 }
-
-// function runBasicEmulation() {
-//     let smpu = new SMPU();
-//     let memory = new ReadWriteMemory(6);
-//     let data = compiler.export();
-//     if (data === undefined || data.length == 0) {
-//         return;
-//     }
-//     for (let i = 0; i < data.length; i++) {
-//         const byte = data[i];
-//         memory.write(byte[0], byte[1]);
-//     }
-//     smpu.mount(memory);
-//     let debugMessages = [];
-//     let status = true;
-//     while (status) {
-//         let out = smpu.clock();
-//         for (let i = 0; i < out[0].length; i++) {
-//             debugMessages.push(out[0][i]);
-//         }
-//         status = out[1];
-//     }
-//     return debugMessages;
-// }
 
 function toggleEmulatorDrawer() {
     var drawer = document.getElementById
@@ -570,7 +558,7 @@ function runOneClock() {
     updateDisplay();
     const debugConsole = document.getElementById('debugConsole');
     for (let i = 0; i < out[0].length; i++) {
-        debugConsole.innerText += out[0][i] + '\n';
+        debugConsole.innerText += "[" + smpu.getValue("p") + "] " + out[0][i] + '\n';
     }
     let status = out[1];
     if (!status && clockInterval !== null) {
@@ -629,8 +617,8 @@ function createDevice() {
         nBits.max = 16;
         nBits.value = 6;
         nBits.onchange = function () {
-            memory = new ReadWriteMemory(nBits.value);
-            device.setNewDevice(memory);
+            memory.setNBits(nBits.value);
+            updateDisplay();
         }
         card.appendChild(nBits);
         let rangeLimit = document.createElement('input');

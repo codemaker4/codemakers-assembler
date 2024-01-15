@@ -159,6 +159,7 @@ body {
   /* grow, shrink, basis */
   overflow: auto;
   /* make elements scrollable */
+  border: 1px solid #888;
 }
 
 .emulator-drawer.expanded {
@@ -187,7 +188,6 @@ body {
   color: white;
 }
 
-
 /* Zebra stripe rows for better readability */
 .dataTable tr:nth-child(even) {
   background-color: #222;
@@ -211,4 +211,8 @@ body {
 .text-button {
   cursor: pointer;
   float: right;
+}
+
+#debugConsole {
+  margin-left: 10px;
 }
