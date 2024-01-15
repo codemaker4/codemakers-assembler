@@ -378,14 +378,14 @@ class Compiler {
             }
 
             if (codePart.type == "label") {
-                codePart.output += ":";
+                codePart.output = "";
             }
 
             if (codePart.address === undefined) {
                 codePart.address = "";
             }
 
-            newHTML+= `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output}</td></tr>`
+            newHTML+= `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output} ${codePart.origCode}</td></tr>`
         }
 
         if (!compileMessage) {
