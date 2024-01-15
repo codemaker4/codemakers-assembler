@@ -18,6 +18,7 @@ body {
 .controlPanel {
   grid-area: controlPanel;
   margin: 0;
+  /* margin-left: 5px; */
 }
 
 .messagePanel {
@@ -215,4 +216,41 @@ body {
 
 #debugConsole {
   margin-left: 10px;
+}
+
+.darkZero {
+  color: #666;
+}
+
+button {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
+  /* margin-left: 0; */
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #444;
+}
+
+input {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
+}
+
+select {
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
 }

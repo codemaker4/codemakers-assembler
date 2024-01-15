@@ -17,7 +17,7 @@
   <div class="controlPanel">
     <button onclick="compiler.compile();">compile</button>
     <button onclick="exportVincelingMem();">export to Vinceling's memory</button>
-    <button onclick="exportNiknalEmulator();">export to Niknal's emulator</button>
+    <!-- <button onclick="exportNiknalEmulator();">export to Niknal's emulator</button> -->
     <button onclick="toggleEmulatorDrawer()">Toggle Emulator Drawer</button>
   </div>
   <div class="messagePanel" id="messagePanel">
@@ -93,9 +93,10 @@
       </table>
     </div>
     <div class="controls">
-      <button onclick="runOneClock()">Run 1 Clock</button><br>
-      <button onclick="autoClock()">Auto Clock</button><br>
-      <button onclick="restartEmulator()">Restart Emulator</button>
+      <div id="clockIcon">🕛</div>
+      <button onclick="runOneClock()">Run 1 Clock</button>-runs 1 clock<br>
+      <button onclick="autoClock()">Auto Clock</button>-runs 1 clock every 10ms<br>
+      <button onclick="restartEmulator()">Restart Emulator</button>-resets everything and injects code
     </div>
     <div class="debugConsole">
       <p id="debugConsole"></p>

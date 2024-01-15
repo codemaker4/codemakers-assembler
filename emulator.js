@@ -466,7 +466,40 @@ class ReadWriteMemory {
             td.innerText = i;
             tr.appendChild(td);
             td = document.createElement('td');
-            td.innerText = "(" + this.memory[i] + ") " + (this.memory[i].toString(2).padStart(8, '0'));
+            if (this.memory[i] === 0) {
+                td.classList.add('darkZero');
+                td.innerText = "(0) 00000000";
+            } else {
+                let span = document.createElement('span');
+                span.innerText = "(" + this.memory[i] + ") ";
+                td.appendChild(span);
+                let splitList = [];
+                let memoryString = this.memory[i].toString(2).padStart(8, '0');
+                let currentSplit = memoryString[0];
+                let currentSplitLength = 1;
+                for (let j = 1; j < 8; j++) {
+                    if (memoryString[j] === currentSplit) {
+                        currentSplitLength++;
+                    }
+                    else {
+                        splitList.push([currentSplit, currentSplitLength]);
+                        currentSplit = memoryString[j];
+                        currentSplitLength = 1;
+                    }
+                }
+                splitList.push([currentSplit, currentSplitLength]);
+                // split into spans (for coloring)
+                for (let j = 0; j < splitList.length; j++) {
+                    let span = document.createElement('span');
+                    span.innerText = splitList[j][0].repeat(splitList[j][1]);
+                    if (splitList[j][0] === '0') {
+                        span.classList.add('darkZero');
+                    }
+                    td.appendChild(span);
+                }
+
+                // td.innerText = "(" + this.memory[i] + ") " + (this.memory[i].toString(2).padStart(8, '0'));
+            }
             tr.appendChild(td);
             table.appendChild(tr);
         }
@@ -556,10 +589,22 @@ function restartEmulator() {
         const byte = data[i];
         smpu.writeDevices(byte[0], byte[1]);
     }
+    // clear debug console
+    document.getElementById('debugConsole').innerText = '[INFO] Emulator restarted\n';
+    // reset clock icon
+    clockIndex = 0;
+    document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
     updateDisplay();
 }
 
+let clockIcons = [..."🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚"];
+let clockIndex = 0;
+
 function runOneClock() {
+    if (!smpu.halted) {
+        clockIndex = (clockIndex + 1) % clockIcons.length;
+        document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
+    }
     let out = smpu.clock();
     updateDisplay();
     const debugConsole = document.getElementById('debugConsole');
@@ -583,40 +628,23 @@ function setInfoWrite(type, device) {
 
 function createDevice() {
     let deviceType = document.getElementById('createDeviceType').value;
+    createDeviceWithType(deviceType);
+}
+
+function createDeviceWithType(deviceType) {
     let device;
     let card;
+    let titleValue = deviceType;
+    let includeInfoButton = false;
+    // create div with settings for device
+
+    card = document.createElement('div');
+    card.classList.add('device-card');
+
     if (deviceType === 'memory') {
+        titleValue = 'Memory';
         let memory = new ReadWriteMemory(6);
         device = new RangeLimiter(memory, false, "0");
-        // create div with settings for device
-        card = document.createElement('div');
-        card.classList.add('device-card');
-        let title = document.createElement('strong');
-        title.innerText = 'Memory ';
-        card.appendChild(title);
-        let deleteButton = document.createElement('span');
-        deleteButton.innerText = '❌';
-        deleteButton.classList.add('text-button');
-        deleteButton.onclick = function () {
-            smpu.unmount(device);
-            card.remove();
-            if (outputtingInfo === memory) {
-                outputtingInfo = null;
-                outputtingInfoType = null;
-                updateDisplay();
-            }
-            devices = devices.filter((d) => d !== device);
-        }
-        card.appendChild(deleteButton);
-        let infoButton = document.createElement('span');
-        infoButton.innerText = '(i)';
-        infoButton.classList.add('text-button');
-        infoButton.onclick = function () {
-            setInfoWrite('memory', memory);
-            updateDisplay();
-        }
-        card.appendChild(infoButton);
-        card.appendChild(document.createElement('br'));
         let nBits = document.createElement('input');
         nBits.type = 'number';
         nBits.min = 1;
@@ -627,32 +655,68 @@ function createDevice() {
             updateDisplay();
         }
         card.appendChild(nBits);
-        let rangeLimit = document.createElement('input');
-        rangeLimit.type = 'checkbox';
-        rangeLimit.id = 'rangeLimit';
-        rangeLimit.checked = false;
-        let highBits = document.createElement('input');
-        rangeLimit.onchange = function () {
-            highBits.disabled = !rangeLimit.checked;
-            device.setRangeLimitEnabled(rangeLimit.checked);
-        }
-        card.appendChild(rangeLimit);
-        let rangeLimitLabel = document.createElement('label');
-        rangeLimitLabel.innerText = 'Range limit';
-        rangeLimitLabel.htmlFor = 'rangeLimit';
-        card.appendChild(rangeLimitLabel);
-        // add spacer
-        card.appendChild(document.createElement('br'));
-        highBits.type = 'text';
-        highBits.id = 'highBits';
-        highBits.disabled = true;
-        highBits.placeholder = 'High bits';
-        highBits.onchange = function () {
-            device.setHighBits(highBits.value);
-        }
-        card.appendChild(highBits);
-        document.getElementById('devices').appendChild(card);
+        includeInfoButton = true;
     }
+
+    let title = document.createElement('strong');
+    title.innerText = titleValue;
+    card.appendChild(title);
+
+    let deleteButton = document.createElement('span');
+    deleteButton.innerText = '❌';
+    deleteButton.classList.add('text-button');
+    deleteButton.onclick = function () {
+        smpu.unmount(device);
+        card.remove();
+        if (outputtingInfo === device.device) {
+            outputtingInfo = null;
+            outputtingInfoType = null;
+            updateDisplay();
+        }
+        devices = devices.filter((d) => d !== device);
+    }
+    card.appendChild(deleteButton);
+
+    if (includeInfoButton) {
+        let infoButton = document.createElement('span');
+        infoButton.innerText = '(i)';
+        infoButton.classList.add('text-button');
+        infoButton.onclick = function () {
+            setInfoWrite(deviceType, device.device);
+            updateDisplay();
+        }
+        card.appendChild(infoButton);
+    }
+    card.appendChild(document.createElement('br'));
+
+    let rangeLimit = document.createElement('input');
+    rangeLimit.type = 'checkbox';
+    rangeLimit.id = 'rangeLimit';
+    rangeLimit.checked = false;
+    let highBits = document.createElement('input');
+    rangeLimit.onchange = function () {
+        highBits.disabled = !rangeLimit.checked;
+        device.setRangeLimitEnabled(rangeLimit.checked);
+    }
+    card.appendChild(rangeLimit);
+
+    let rangeLimitLabel = document.createElement('label');
+    rangeLimitLabel.innerText = 'Range limit';
+    rangeLimitLabel.htmlFor = 'rangeLimit';
+    card.appendChild(rangeLimitLabel);
+
+    card.appendChild(document.createElement('br'));
+
+    highBits.type = 'text';
+    highBits.id = 'highBits';
+    highBits.disabled = true;
+    highBits.placeholder = 'High bits';
+    highBits.onchange = function () {
+        device.setHighBits(highBits.value);
+    }
+    card.appendChild(highBits);
+
+    document.getElementById('devices').appendChild(card);
     smpu.mount(device);
     devices.push(device);
     updateDisplay();
