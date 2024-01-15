@@ -52,16 +52,16 @@ class SMPU {
                 readFrom.push(this.devices[i]);
             }
         }
-        let debugMessage = null;
+        let debugMessages = [];
         if (readFrom.length > 1) {
-            debugMessage = 'WARN: Multiple devices read from at address ' + addr + '. assuming simeltaneous output, but this is likely not the case';
+            debugMessages = ['WARN: Multiple devices read from at address ' + addr + '. assuming simeltaneous output, but this is likely not the case'];
         }
         let status = true;
         if (readFrom.length === 0) {
-            debugMessage = 'FATAL: No devices read from at address ' + addr + '. SMPU would hang here';
+            debugMessages = ['FATAL: No devices read from at address ' + addr + '. SMPU would hang here'];
             status = false;
         }
-        return (output, debugMessage, status);
+        return [output, debugMessages, status];
     }
 
     writeDevices(addr, value) {
@@ -80,19 +80,19 @@ class SMPU {
             debugMessages.push('FATAL: No devices wrote to at address ' + addr + '. SMPU would hang here');
             status = false;
         }
-        return (debugMessages, status);
+        return [debugMessages, status];
     }
 
     pullAtProgramCounter() {
         let readDevices = this.readDevices(this.getValue('p'));
-        let value = out[0];
-        let debugMessages = out[1];
-        let status = out[2];
+        let value = readDevices[0];
+        let debugMessages = readDevices[1];
+        let status = readDevices[2];
         this.setValue('p', this.getValue('p') + 1);
         if (this.getValue('p') === 0) {
             debugMessages.push('WARN: Program counter overflowed');
         }
-        return (value, debugMessages, status);
+        return [value, debugMessages, status];
     }
 
     mount(device) {
@@ -104,8 +104,21 @@ class SMPU {
     }
 
     clock() {
-        let instruction = this.pullAtProgramCounter();
-        return this.execute(instruction);
+        let prun = this.getValue('p');
+        let out = this.pullAtProgramCounter();
+        let instruction = out[0];
+        let debugMessages = out[1];
+        let status = out[2];
+        if (!status) {
+            return [debugMessages, status];
+        }
+        let execOut = this.execute(instruction);
+        for (let i = 0; i < execOut[0].length; i++) {
+            debugMessages.push(execOut[0][i]);
+        }
+        console.log(instruction, prun);
+        console.log(debugMessages);
+        return [debugMessages, execOut[1]];
     }
     execute(instruction) {
         // Your instruction implementations go here
@@ -115,26 +128,28 @@ class SMPU {
         let value;
         let debugMessages;
         let status;
+        let result;
         let l;
         let h;
         switch (instruction) {
             case 0: // HLT
-                if (DEBUG) console.log('HALT');
-                return (['INFO: Halting'], false);
+                return [['INFO: Halting'], false];
             case 1: // NOP
-                return ([], true);
+                return [[], true];
             case 2: // ADR
                 h = this.pullAtProgramCounter();
                 l = this.pullAtProgramCounter();
-                let hDebug = h[1];
-                let lDebug = l[1];
+                debugMessages = h[1];
+                for (let i = 0; i < l[1].length; i++) {
+                    debugMessages.push(l[1][i]);
+                }
                 let hStatus = h[2];
                 let lStatus = l[2];
                 h = h[0];
                 l = l[0];
                 this.setValue('h', h);
                 this.setValue('l', l);
-                return ([hDebug, lDebug], hStatus && lStatus);
+                return [debugMessages, hStatus && lStatus];
             case 3: // LDA
                 addr = this.getValue('r');
                 out = this.readDevices(addr);
@@ -142,61 +157,69 @@ class SMPU {
                 debugMessages = out[1];
                 status = out[2];
                 this.setValue('a', value);
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 4: // STA
                 addr = this.getValue('r');
                 value = this.getValue('a');
                 out = this.writeDevices(addr, value);
                 debugMessages = out[0];
                 status = out[1];
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 5: // LDB
                 this.setValue('b', this.getValue('a'));
-                return ([], true);
+                return [[], true];
             case 6: // SWP
                 let a = this.getValue('a');
                 this.setValue('a', this.getValue('b'));
                 this.setValue('b', a);
-                return ([], true);
+                return [[], true];
             case 7: // LDH
                 this.setValue('h', this.getValue('a'));
-                return ([], true);
+                return [[], true];
             case 8: // LDL
                 this.setValue('l', this.getValue('a'));
-                return ([], true);
+                return [[], true];
             case 9: // STH
                 this.setValue('a', this.getValue('h'));
-                return ([], true);
+                return [[], true];
             case 10: // STL
                 this.setValue('a', this.getValue('l'));
-                return ([], true);
+                return [[], true];
             case 11: // LDQ
                 this.setValue('q', this.getValue('a'));
-                return ([], true);
+                return [[], true];
             case 12: // STQ
                 this.setValue('a', this.getValue('q'));
-                return ([], true);
+                return [[], true];
             case 13: // CLA
                 out = this.pullAtProgramCounter();
                 value = out[0];
                 debugMessages = out[1];
                 status = out[2];
                 this.setValue('a', value);
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 14: // CLB
                 out = this.pullAtProgramCounter();
                 value = out[0];
                 debugMessages = out[1];
                 status = out[2];
                 this.setValue('b', value);
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 15: // CLQ
                 out = this.pullAtProgramCounter();
                 value = out[0];
                 debugMessages = out[1];
                 status = out[2];
                 this.setValue('q', value);
-                return ([debugMessages], status);
+                return [debugMessages, status];
+                result = this.getValue('a') + this.getValue('b');
+                this.setValue('a', result);
+                if (result > 255) {
+                    this.setValue('c', 1);
+                } else {
+                    this.setValue('c', 0);
+                }
+                return [[], true];
             case 20: // ADD
                 result = this.getValue('a') + this.getValue('b');
                 this.setValue('a', result);
@@ -205,7 +228,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 21: // ADDC
                 result = this.getValue('a') + this.getValue('b') + this.getValue('c');
                 this.setValue('a', result);
@@ -214,7 +237,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 22: // SUB
                 result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1;
                 this.setValue('a', result);
@@ -223,7 +246,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 1);
                 }
-                return ([], true);
+                return [[], true];
             case 23: // SUBC
                 result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1 + this.getValue('c');
                 this.setValue('a', result);
@@ -232,7 +255,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 1);
                 }
-                return ([], true);
+                return [[], true];
             case 24: // SHL
                 result = this.getValue('a') << 1;
                 this.setValue('a', result);
@@ -241,7 +264,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 25: // SHLC
                 result = this.getValue('a') << 1 + this.getValue('c');
                 this.setValue('a', result);
@@ -250,7 +273,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 26: // SHR
                 result = this.getValue('a') >> 1;
                 this.setValue('a', result);
@@ -259,7 +282,7 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 27: // SHRC
                 result = this.getValue('a') >> 1 + this.getValue('c') * 128;
                 this.setValue('a', result);
@@ -268,32 +291,32 @@ class SMPU {
                 } else {
                     this.setValue('c', 0);
                 }
-                return ([], true);
+                return [[], true];
             case 28: // AND
                 this.setValue('a', this.getValue('a') & this.getValue('b'));
-                return ([], true);
+                return [[], true];
             case 29: // OR
                 this.setValue('a', this.getValue('a') | this.getValue('b'));
-                return ([], true);
+                return [[], true];
             case 30: // XOR
                 this.setValue('a', this.getValue('a') ^ this.getValue('b'));
-                return ([], true);
+                return [[], true];
             case 31: // NAND
                 this.setValue('a', (this.getValue('a') & this.getValue('b')) ^ 0xFF);
-                return ([], true);
+                return [[], true];
             case 32: // NOR
                 this.setValue('a', (this.getValue('a') | this.getValue('b')) ^ 0xFF);
-                return ([], true);
+                return [[], true];
             case 33: // XNOR
                 this.setValue('a', (this.getValue('a') ^ this.getValue('b')) ^ 0xFF);
-                return ([], true);
+                return [[], true];
             case 34: // CKSM
                 result = 0;
                 for (let i = 0; i < 8; i++) {
                     result += this.getValue('a') >> i & 1;
                 }
                 this.setValue('c', result % 2);
-                return ([], true);
+                return [[], true];
             case 35: // CKSMC
                 result = 0;
                 for (let i = 0; i < 8; i++) {
@@ -301,31 +324,31 @@ class SMPU {
                 }
                 result += this.getValue('c');
                 this.setValue('c', result % 2);
-                return ([], true);
+                return [[], true];
             case 36: // INCR
                 this.setValue('q', this.getValue('q') + 1);
-                return ([], true);
+                return [[], true];
             case 37: // DECR
                 this.setValue('q', this.getValue('q') - 1);
-                return ([], true);
+                return [[], true];
             case 38: // JMP
                 this.setValue('p', this.getValue('r'));
-                return ([], true);
+                return [[], true];
             case 39: // JMPC
                 if (this.getValue('c') === 1) {
                     this.setValue('p', this.getValue('r'));
                 }
-                return ([], true);
+                return [[], true];
             case 40: // JMPZ
                 if (this.getValue('z') === 1) {
                     this.setValue('p', this.getValue('r'));
                 }
-                return ([], true);
+                return [[], true];
             case 41: // JMPQ
                 if (this.getValue('z') === 0) {
                     this.setValue('p', this.getValue('r'));
                 }
-                return ([], true);
+                return [[], true];
             case 42: // PSH
                 out = this.writeDevices(this.getValue('s') + 0xFF00, this.getValue('a'));
                 this.setValue('s', this.getValue('s') - 1);
@@ -334,7 +357,7 @@ class SMPU {
                 if (this.getValue('s') === 255) {
                     debugMessages.push('WARN: Stack pointer underflowed');
                 }
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 43: // POP
                 this.setValue('s', this.getValue('s') + 1);
                 out = this.readDevices(this.getValue('s') + 0xFF00);
@@ -345,7 +368,7 @@ class SMPU {
                 if (this.getValue('s') === 0) {
                     debugMessages.push('WARN: Stack pointer overflowed');
                 }
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 44: // SUBR
                 debugMessages = [];
                 out = this.writeDevices(this.getValue('s') + 0xFF00, this.getValue('p') / 256);
@@ -367,7 +390,7 @@ class SMPU {
                     debugMessages.push('WARN: Stack pointer underflowed');
                 }
                 this.setValue('p', this.getValue('r'));
-                return ([debugMessages], status);
+                return [debugMessages, status];
             case 45: // RET
                 // #pops the address of the last subroutine instruction, first L, then H is popped (reverse from pushing, 
                 // because its a stack). puts into p (program counter)
@@ -389,10 +412,10 @@ class SMPU {
                 for (let i = 0; i < h[1].length; i++) {
                     debugMessages.push(h[1][i]);
                 }
-                return ([debugMessages], l[2] && h[2]);
+                return [debugMessages, l[2] && h[2]];
 
             default:
-                return ['FATAL: Invalid instruction ' + instruction + '. SMPU would hang here', false];
+                return [['FATAL: Invalid instruction ' + instruction + '. SMPU would hang here'], false];
         }
     }
 }
@@ -404,15 +427,38 @@ function shouldIgnore(addr, highBits) {
 }
 
 class ReadWriteMemory {
-    constructor(nbits, highBits) {
+    constructor(nbits) {
         this.memory = new Uint8Array(2 ** nbits);
-        this.highBits = highBits;
     }
     read(address) {
-        return (this.memory[address % 0xFF], true);
+        return [this.memory[address % 0xFF], true];
     }
     write(address, value) {
         this.memory[address % 0xFF] = value;
         return true;
     }
+}
+
+function runBasicEmulation() {
+    let smpu = new SMPU();
+    let memory = new ReadWriteMemory(6);
+    let data = compiler.export();
+    if (data === undefined || data.length == 0) {
+        return;
+    }
+    for (let i = 0; i < data.length; i++) {
+        const byte = data[i];
+        memory.write(byte[0], byte[1]);
+    }
+    smpu.mount(memory);
+    let debugMessages = [];
+    let status = true;
+    while (status) {
+        let out = smpu.clock();
+        for (let i = 0; i < out[0].length; i++) {
+            debugMessages.push(out[0][i]);
+        }
+        status = out[1];
+    }
+    return debugMessages;
 }
