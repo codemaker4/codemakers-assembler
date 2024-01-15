@@ -50,5 +50,5 @@ function exportNiknalEmulator() {
     }
 
     download("memory.txt", file);
-    postMessage(`Export successfull! Exported ${data.length} bytes to an address space of ${binary.length} bytes.\nDownload the emulator from https://github.com/niknal357/SMPU-emulator and replace the memory.txt file.`);
+    postMessage(`Export successfull! Exported ${data.length} bytes to an address space of ${memory.length} bytes.\nDownload the emulator from https://github.com/niknal357/SMPU-emulator and replace the memory.txt file.`);
 }
