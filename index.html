@@ -44,12 +44,12 @@
     <p id="binOut">Press compile to compile the code, then press make QR code to make a QR code.</p>
   </div>
   <div class="emulator-drawer" id="emulator-drawer">
-    <div class="registers">
-      <table>
+    <div>
+      <table class="dataTable">
         <tr>
-          <th>Register</th>
-          <th>Decimal</th>
-          <th>Binary</th>
+          <th>Reg</th>
+          <th>Dec</th>
+          <th>Bin</th>
         </tr>
         <tr>
           <td>A</td>
@@ -100,11 +100,17 @@
     <div class="debugConsole">
       <p id="debugConsole"></p>
     </div>
-    <div class="devices">
+    <div class="devices" id="devices">
       <button onclick="createDevice()" id="createDeviceButton">Create Device</button>
+      <select id="createDeviceType">
+        <option value="memory">Memory</option>
+      </select>
       <div class="deviceList">
         <!-- Dynamically generate device displays here -->
       </div>
+    </div>
+    <div class="deviceInfo" id="deviceInfo" style="display: none;">
+
     </div>
   </div>
 </body>

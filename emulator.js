@@ -122,8 +122,6 @@ class SMPU {
         for (let i = 0; i < execOut[0].length; i++) {
             debugMessages.push(execOut[0][i]);
         }
-        console.log(instruction, prun);
-        console.log(debugMessages);
         return [debugMessages, execOut[1]];
     }
     execute(instruction) {
@@ -450,6 +448,30 @@ class ReadWriteMemory {
     reset() {
         this.memory = new Uint8Array(this.memory.length);
     }
+    infoScreen() {
+        let table = document.createElement('table');
+        table.classList.add('dataTable');
+        let tr = document.createElement('tr');
+        let td = document.createElement('td');
+        td.innerText = 'Addr';
+        tr.appendChild(td);
+        td = document.createElement('td');
+        td.innerText = 'Val';
+        tr.appendChild(td);
+        table.appendChild(tr);
+        for (let i = 0; i < this.memory.length; i++) {
+            tr = document.createElement('tr');
+            td = document.createElement('td');
+            // td.innerText = "(" + i + ") " + (i.toString(2).padStart(this.nbits, '0'));
+            td.innerText = i;
+            tr.appendChild(td);
+            td = document.createElement('td');
+            td.innerText = "(" + this.memory[i] + ") " + (this.memory[i].toString(2).padStart(8, '0'));
+            tr.appendChild(td);
+            table.appendChild(tr);
+        }
+        return table.outerHTML;
+    }
 }
 
 class RangeLimiter {
@@ -478,6 +500,9 @@ class RangeLimiter {
     }
     reset() {
         this.device.reset();
+    }
+    setNewDevice(device) {
+        this.device = device;
     }
 }
 
@@ -513,13 +538,7 @@ function toggleEmulatorDrawer() {
 
 let clockInterval = null;
 let smpu = new SMPU();
-let devices = [
-    {
-        device: new ReadWriteMemory(6),
-        rangeLimit: false,
-        highBits: "0000000000",
-    }
-];
+let devices = [];
 
 function restartEmulator() {
     if (clockInterval !== null) {
@@ -532,8 +551,7 @@ function restartEmulator() {
         device.reset()
     }
     for (let i = 0; i < devices.length; i++) {
-        const limiter = new RangeLimiter(devices[i].device, devices[i].rangeLimit, devices[i].highBits);
-        smpu.mount(limiter);
+        smpu.mount(devices[i].device);
     }
     // write compiled code to memory
     let data = compiler.export();
@@ -544,9 +562,8 @@ function restartEmulator() {
         const byte = data[i];
         smpu.writeDevices(byte[0], byte[1]);
     }
+    updateDisplay();
 }
-
-// restartEmulator();
 
 function runOneClock() {
     let out = smpu.clock();
@@ -562,6 +579,87 @@ function runOneClock() {
     }
 }
 
+let outputtingInfo = null;
+let outputtingInfoType = null;
+
+function setInfoWrite(type, device) {
+    outputtingInfo = device;
+    outputtingInfoType = type;
+}
+
+function createDevice() {
+    let deviceType = document.getElementById('createDeviceType').value;
+    let device;
+    let card;
+    if (deviceType === 'memory') {
+        let memory = new ReadWriteMemory(6);
+        device = new RangeLimiter(memory, false, "0");
+        // create div with settings for device
+        card = document.createElement('div');
+        card.classList.add('device-card');
+        let title = document.createElement('strong');
+        title.innerText = 'Memory ';
+        card.appendChild(title);
+        let deleteButton = document.createElement('span');
+        deleteButton.innerText = '❌';
+        deleteButton.classList.add('text-button');
+        deleteButton.onclick = function () {
+            smpu.unmount(device);
+            card.remove();
+            if (outputtingInfo === memory) {
+                outputtingInfo = null;
+                outputtingInfoType = null;
+                updateDisplay();
+            }
+            devices = devices.filter((d) => d !== device);
+        }
+        card.appendChild(deleteButton);
+        let infoButton = document.createElement('span');
+        infoButton.innerText = '(i)';
+        infoButton.classList.add('text-button');
+        infoButton.onclick = function () {
+            setInfoWrite('memory', memory);
+            updateDisplay();
+        }
+        card.appendChild(infoButton);
+        card.appendChild(document.createElement('br'));
+        let nBits = document.createElement('input');
+        nBits.type = 'number';
+        nBits.min = 1;
+        nBits.max = 16;
+        nBits.value = 6;
+        nBits.onchange = function () {
+            memory = new ReadWriteMemory(nBits.value);
+            device.setNewDevice(memory);
+        }
+        card.appendChild(nBits);
+        let rangeLimit = document.createElement('input');
+        rangeLimit.type = 'checkbox';
+        rangeLimit.id = 'rangeLimit';
+        rangeLimit.checked = false;
+        rangeLimit.onchange = function () {
+            let highBits = document.getElementById('highBits');
+            highBits.disabled = !rangeLimit.checked;
+        }
+        card.appendChild(rangeLimit);
+        let rangeLimitLabel = document.createElement('label');
+        rangeLimitLabel.innerText = 'Range limit';
+        rangeLimitLabel.htmlFor = 'rangeLimit';
+        card.appendChild(rangeLimitLabel);
+        // add spacer
+        card.appendChild(document.createElement('br'));
+        let highBits = document.createElement('input');
+        highBits.type = 'text';
+        highBits.id = 'highBits';
+        highBits.disabled = true;
+        highBits.placeholder = 'High bits';
+        card.appendChild(highBits);
+        document.getElementById('devices').appendChild(card);
+    }
+    smpu.mount(device);
+    devices.push(device);
+    updateDisplay();
+}
 
 function autoClock() {
     if (clockInterval === null) {
@@ -589,4 +687,11 @@ function updateDisplay() {
     document.getElementById('register-S-bin').innerHTML = smpu.getValue('s').toString(2).padStart(8, '0');
     document.getElementById('register-C').innerHTML = smpu.getValue('c');
     document.getElementById('register-C-bin').innerHTML = smpu.getValue('c').toString(2).padStart(1, '0');
+    const deviceInfo = document.getElementById('deviceInfo');
+    if (outputtingInfoType === null) {
+        deviceInfo.style.display = 'none';
+    } else {
+        deviceInfo.style.display = 'block';
+        deviceInfo.innerHTML = outputtingInfo.infoScreen();
+    }
 }
