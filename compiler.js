@@ -372,9 +372,9 @@ class Compiler {
             if (codePart.hasError) {
                 let firstError = codePart.debugLog.split("\n").find((line) => line.indexOf("ERROR") != -1);
                 let firstErrorName = firstError.substring(0, firstError.indexOf(":"));
-                codePart.output += ` ${firstErrorName}`;
+                codePart.output = `${firstErrorName}. ${codePart.output}`;
                 if (!compileMessage) {
-                    compileMessage = `Compiled with at least one error. The first one is from line ${codePart.origLine} at address ${codePart.address}: ${firstErrorName}`;
+                    compileMessage = `Assembled with at least one error. The first one is from line ${codePart.origLine} at address ${codePart.address}: ${firstErrorName}`;
                 }
             }
 
@@ -386,11 +386,15 @@ class Compiler {
                 codePart.address = "";
             }
 
-            newHTML += `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output}</td></tr>`
+            if (!codePart.hasError && codePart.type != "label") {
+                codePart.output += " " + codePart.origCode;
+            }
+
+            newHTML+= `<tr><td>${codePart.address}</td><td title="${codePart.debugLog.replaceAll('"', "'")}">${codePart.output}</td></tr>`
         }
 
         if (!compileMessage) {
-            compileMessage = `Compiled without errors.`;
+            compileMessage = `Assembled without errors.`;
         }
 
         this.compileMessage = editMessage(this.compileMessage, compileMessage);
