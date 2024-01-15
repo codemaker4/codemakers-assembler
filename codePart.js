@@ -12,10 +12,10 @@ class CodePart {
         if (/^[A-Z]+$/.test(origCode)) {
             this.type = "instruction";
             this.output = origCode;
-        } else if (/^@[a-zA-Z_-]+$/.test(origCode)) {
+        } else if (/^@[0-9a-zA-Z_-]+$/.test(origCode)) {
             this.type = "address";
             this.output = origCode.slice(1);
-        } else if (/^@[a-zA-Z_-]+\.[hl]$/.test(origCode)) {
+        } else if (/^@[0-9a-zA-Z_-]+\.[hl]$/.test(origCode)) {
             this.type = "addressByte";
             this.output = origCode.slice(1);
         } else if (/^[0-9a-zA-Z_-]+:$/.test(origCode)) {
