@@ -19,6 +19,7 @@ body {
   grid-area: controlPanel;
   margin: 0;
   padding: 5px;
+  padding-top: 1px;
   /* margin-left: 5px; */
 }
 
@@ -231,7 +232,8 @@ button {
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 5px;
-  margin: 0px;
+  /* margin: 0px; */
+  margin-top: 5px;
   /* margin-left: 0; */
   cursor: pointer;
 }
