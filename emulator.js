@@ -247,18 +247,18 @@ class SMPU {
                 result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1;
                 this.setValue('a', result);
                 if (result > 255) {
-                    this.setValue('c', 0);
-                } else {
                     this.setValue('c', 1);
+                } else {
+                    this.setValue('c', 0);
                 }
                 return [[], true];
             case 23: // SUBC
                 result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1 + this.getValue('c');
                 this.setValue('a', result);
                 if (result > 255) {
-                    this.setValue('c', 0);
-                } else {
                     this.setValue('c', 1);
+                } else {
+                    this.setValue('c', 0);
                 }
                 return [[], true];
             case 24: // SHL
