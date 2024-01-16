@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Codemaker's Assembler</title>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Codemaker's Assembler</title>
   <link rel="stylesheet" href="index.css">
   <script src="messages.js"></script>
   <script src="instructions.js"></script>
@@ -12,10 +13,10 @@
   <script src="emulator.js"></script>
 </head>
 
-  <body>
-    <div class="controlPanel">
-      <button onclick="window.open('https://docs.google.com/spreadsheets/d/1n4oHQyALy8eSwzNoQ8h_Uuwm7qNOYg7x-Y8puhcntzs/edit?usp=sharing', '_blank')">documentation</button>
-      <button onclick="exportVincelingMem();">export to Vinceling's memory</button>
+<body>
+  <div class="controlPanel">
+    <button onclick="window.open('https://docs.google.com/spreadsheets/d/1n4oHQyALy8eSwzNoQ8h_Uuwm7qNOYg7x-Y8puhcntzs/edit?usp=sharing', '_blank')">documentation</button>
+    <button onclick="exportVincelingMem();">export to Vinceling's memory</button>
     <!-- <button onclick="exportNiknalEmulator();">export to Niknal's emulator</button> -->
     <button onclick="toggleEmulatorDrawer()">Toggle Emulator Drawer</button>
   </div>
@@ -42,7 +43,7 @@
   <div class="outputContainer">
     <p id="binOut">Press compile to compile the code, then press make QR code to make a QR code.</p>
   </div>
-  <div class="emulator-drawer" id="emulator-drawer">
+  <div class="emulationDrawer" id="emulationDrawer">
     <div>
       <table class="dataTable">
         <tr>

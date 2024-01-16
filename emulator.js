@@ -561,7 +561,7 @@ class RangeLimiter {
 
 function toggleEmulatorDrawer() {
     var drawer = document.getElementById
-        ("emulator-drawer");
+        ("emulationDrawer");
     drawer.classList.toggle('expanded');
 }
 
