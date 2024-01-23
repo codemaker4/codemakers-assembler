@@ -10,8 +10,7 @@ body {
   grid-template-areas:
     "controlPanel controlPanel"
     "messagePanel messagePanel"
-    "code output"
-    "emulationDrawer emulationDrawer";
+    "code output";
   grid-template-columns: auto 30em;
   grid-template-rows: 2em min-content auto;
 }
@@ -141,14 +140,17 @@ body {
   overflow-x: hidden;
   transition: height 0.5s ease-in-out;
   height: 0;
-  /* Initially hidden */
-  grid-area: emulationDrawer;
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
-  align-items: stretch;
-  align-content: stretch;
+  /* Instead of height: 0 */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* height: 50vh; */
+  /* Maximum height when expanded */
+  transition: height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  opacity: 0;
+  /* Initially invisible */
 }
 
 .emulationDrawer>* {
@@ -159,8 +161,11 @@ body {
 }
 
 .emulationDrawer.expanded {
+  /* display: flex; */
+  opacity: 1;
+  /* Make it visible */
   height: 50vh;
-  /* Slide up to show */
+  /* Maximum height */
 }
 
 .dataTable {
