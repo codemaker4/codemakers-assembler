@@ -253,7 +253,7 @@ class SMPU {
                 }
                 return [[], true];
             case 23: // SUBC
-                result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1 + this.getValue('c');
+                result = this.getValue('a') + (this.getValue('b') ^ 0xFF) + 1 - this.getValue('c');
                 this.setValue('a', result);
                 if (result > 255) {
                     this.setValue('c', 1);
