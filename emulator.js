@@ -442,75 +442,129 @@ class ReadWriteMemory {
     constructor(nbits) {
         this.nbits = nbits;
         this.memory = new Uint8Array(2 ** nbits);
+        this.table = null;
+        this.toUpdateInTable = [];
     }
     read(address) {
         return [this.memory[address % (2 ** this.nbits)], true];
     }
     write(address, value) {
         this.memory[address % (2 ** this.nbits)] = value;
+        if (this.table !== null) {
+            this.toUpdateInTable.push(address % (2 ** this.nbits));
+        }
         return true;
     }
     reset() {
         this.memory = new Uint8Array(this.memory.length);
+        this.table = null;
     }
     infoScreen() {
-        let table = document.createElement('table');
-        table.classList.add('dataTable');
-        let tr = document.createElement('tr');
-        let td = document.createElement('td');
-        td.innerText = 'Addr';
-        tr.appendChild(td);
-        td = document.createElement('td');
-        td.innerText = 'Val';
-        tr.appendChild(td);
-        table.appendChild(tr);
-        // create table
-        for (let i = 0; i < this.memory.length; i++) {
-            tr = document.createElement('tr');
-            td = document.createElement('td');
-            td.innerText = i;
+        if (this.table === null) {
+            this.table = document.createElement('table');
+            this.table.classList.add('dataTable');
+            let tr = document.createElement('tr');
+            let td = document.createElement('td');
+            td.innerText = 'Addr';
             tr.appendChild(td);
             td = document.createElement('td');
-            if (this.memory[i] === 0) {
-                // special case for 0
-                td.classList.add('darkZero');
-                td.innerText = "(0) 00000000";
-            } else {
-                // split into spans (for coloring)
-                let span = document.createElement('span');
-                span.innerText = "(" + this.memory[i] + ") ";
-                td.appendChild(span);
-                let splitList = [];
-                let memoryString = this.memory[i].toString(2).padStart(8, '0');
-                let currentSplit = memoryString[0];
-                let currentSplitLength = 1;
-                for (let j = 1; j < 8; j++) {
-                    if (memoryString[j] === currentSplit) {
-                        currentSplitLength++;
+            td.innerText = 'Val';
+            tr.appendChild(td);
+            this.table.appendChild(tr);
+            // create table
+            for (let i = 0; i < this.memory.length; i++) {
+                tr = document.createElement('tr');
+                td = document.createElement('td');
+                td.innerText = i;
+                tr.appendChild(td);
+                td = document.createElement('td');
+                if (this.memory[i] === 0) {
+                    // special case for 0
+                    td.classList.add('darkZero');
+                    td.innerText = "(0) 00000000";
+                } else {
+                    // split into spans (for coloring)
+                    let span = document.createElement('span');
+                    span.innerText = "(" + this.memory[i] + ") ";
+                    td.appendChild(span);
+                    let splitList = [];
+                    let memoryString = this.memory[i].toString(2).padStart(8, '0');
+                    let currentSplit = memoryString[0];
+                    let currentSplitLength = 1;
+                    for (let j = 1; j < 8; j++) {
+                        if (memoryString[j] === currentSplit) {
+                            currentSplitLength++;
+                        }
+                        else {
+                            splitList.push([currentSplit, currentSplitLength]);
+                            currentSplit = memoryString[j];
+                            currentSplitLength = 1;
+                        }
                     }
-                    else {
-                        splitList.push([currentSplit, currentSplitLength]);
-                        currentSplit = memoryString[j];
-                        currentSplitLength = 1;
+                    splitList.push([currentSplit, currentSplitLength]);
+                    // create spans
+                    for (let j = 0; j < splitList.length; j++) {
+                        let span = document.createElement('span');
+                        span.innerText = splitList[j][0].repeat(splitList[j][1]);
+                        if (splitList[j][0] === '0') {
+                            span.classList.add('darkZero');
+                        }
+                        td.appendChild(span);
                     }
                 }
-                splitList.push([currentSplit, currentSplitLength]);
-                // create spans
-                for (let j = 0; j < splitList.length; j++) {
+                tr.appendChild(td);
+                this.table.appendChild(tr);
+            }
+            return this.table.outerHTML;
+        } else {
+            for (let i = 0; i < this.toUpdateInTable.length; i++) {
+                // update table elements that have changed
+                let addr = this.toUpdateInTable[i];
+                let tr = this.table.children[addr + 1];
+                let td = tr.children[1];
+                if (this.memory[addr] === 0) {
+                    // special case for 0
+                    td.classList.add('darkZero');
+                    td.innerText = "(0) 00000000";
+                } else {
+                    td.classList.remove('darkZero');
+                    // split into spans (for coloring)
                     let span = document.createElement('span');
-                    span.innerText = splitList[j][0].repeat(splitList[j][1]);
-                    if (splitList[j][0] === '0') {
-                        span.classList.add('darkZero');
-                    }
+                    span.innerText = "(" + this.memory[addr] + ") ";
+                    td.innerText = "";
                     td.appendChild(span);
+                    let splitList = [];
+                    let memoryString = this.memory[addr].toString(2).padStart(8, '0');
+                    let currentSplit = memoryString[0];
+                    let currentSplitLength = 1;
+                    for (let j = 1; j < 8; j++) {
+                        if (memoryString[j] === currentSplit) {
+                            currentSplitLength++;
+                        }
+                        else {
+                            splitList.push([currentSplit, currentSplitLength]);
+                            currentSplit = memoryString[j];
+                            currentSplitLength = 1;
+                        }
+                    }
+                    splitList.push([currentSplit, currentSplitLength]);
+                    // create spans
+                    for (let j = 0; j < splitList.length; j++) {
+                        let span = document.createElement('span');
+                        span.innerText = splitList[j][0].repeat(splitList[j][1]);
+                        if (splitList[j][0] === '0') {
+                            span.classList.add('darkZero');
+                        }
+                        td.appendChild(span);
+                    }
                 }
             }
-            tr.appendChild(td);
-            table.appendChild(tr);
+            this.toUpdateInTable = [];
+            return this.table.outerHTML;
         }
-        return table.outerHTML;
     }
     setNBits(nbits) {
+        this.table = null;
         // set the number of bits in the memory
         if (nbits === this.nbits) {
             return;
@@ -609,6 +663,7 @@ function restartEmulator() {
 
 let clockIcons = [..."🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚"];
 let clockIndex = 0;
+let lastUpdate = 0;
 
 function runOneClock() {
     // this function is called to run one clock cycle of the computer
@@ -617,7 +672,10 @@ function runOneClock() {
         document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
     }
     let out = smpu.clock();
-    updateDisplay();
+    if (clockInterval !== null && Date.now() - lastUpdate > 200) {
+        updateDisplay();
+        lastUpdate = Date.now();
+    }
     const debugConsole = document.getElementById('debugConsole');
     for (let i = 0; i < out[0].length; i++) {
         debugConsole.innerText += "[" + smpu.getValue("p") + "] " + out[0][i] + '\n';
@@ -747,6 +805,7 @@ function autoClock() {
     } else {
         clearInterval(clockInterval);
         clockInterval = null;
+        updateDisplay();
     }
 }
 
