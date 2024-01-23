@@ -431,11 +431,14 @@ class SMPU {
 function shouldIgnore(addr, highBits) {
     // check if the high bits of addr are equal to highBits (i.e. addr starts with highBits)
     // if so, return false, otherwise return true
+    // essentially, this function returns true if the address is not in the range specified by highBits
     let addrBinary = addr.toString(2).padStart(16, '0');
     return addrBinary.slice(0, highBits.length) !== highBits;
 }
 
 class ReadWriteMemory {
+    // this class is used to represent a memory device
+    // it is a simple memory device that can read and write to an array of bytes
     constructor(nbits) {
         this.nbits = nbits;
         this.memory = new Uint8Array(2 ** nbits);
@@ -461,17 +464,19 @@ class ReadWriteMemory {
         td.innerText = 'Val';
         tr.appendChild(td);
         table.appendChild(tr);
+        // create table
         for (let i = 0; i < this.memory.length; i++) {
             tr = document.createElement('tr');
             td = document.createElement('td');
-            // td.innerText = "(" + i + ") " + (i.toString(2).padStart(this.nbits, '0'));
             td.innerText = i;
             tr.appendChild(td);
             td = document.createElement('td');
             if (this.memory[i] === 0) {
+                // special case for 0
                 td.classList.add('darkZero');
                 td.innerText = "(0) 00000000";
             } else {
+                // split into spans (for coloring)
                 let span = document.createElement('span');
                 span.innerText = "(" + this.memory[i] + ") ";
                 td.appendChild(span);
@@ -490,7 +495,7 @@ class ReadWriteMemory {
                     }
                 }
                 splitList.push([currentSplit, currentSplitLength]);
-                // split into spans (for coloring)
+                // create spans
                 for (let j = 0; j < splitList.length; j++) {
                     let span = document.createElement('span');
                     span.innerText = splitList[j][0].repeat(splitList[j][1]);
@@ -499,8 +504,6 @@ class ReadWriteMemory {
                     }
                     td.appendChild(span);
                 }
-
-                // td.innerText = "(" + this.memory[i] + ") " + (this.memory[i].toString(2).padStart(8, '0'));
             }
             tr.appendChild(td);
             table.appendChild(tr);
@@ -508,6 +511,7 @@ class ReadWriteMemory {
         return table.outerHTML;
     }
     setNBits(nbits) {
+        // set the number of bits in the memory
         if (nbits === this.nbits) {
             return;
         }
@@ -522,6 +526,7 @@ class ReadWriteMemory {
 }
 
 class RangeLimiter {
+    // this class is used to limit the range of addresses that a device can read/write to
     constructor(device, rangeLimit, highBits) {
         this.device = device;
         this.rangeLimit = rangeLimit;
@@ -570,6 +575,9 @@ let smpu = new SMPU();
 let devices = [];
 
 function restartEmulator() {
+    // this function is called to restart the emulator
+    // it resets the SMPU and mounts all devices
+    // it also writes the compiled code to memory
     if (clockInterval !== null) {
         clearInterval(clockInterval);
         clockInterval = null;
@@ -603,6 +611,7 @@ let clockIcons = [..."🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚"];
 let clockIndex = 0;
 
 function runOneClock() {
+    // this function is called to run one clock cycle of the computer
     if (!smpu.halted) {
         clockIndex = (clockIndex + 1) % clockIcons.length;
         document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
@@ -613,7 +622,7 @@ function runOneClock() {
     for (let i = 0; i < out[0].length; i++) {
         debugConsole.innerText += "[" + smpu.getValue("p") + "] " + out[0][i] + '\n';
     }
-    let status = out[1];
+    let status = out[1]; // whether the computer has halted
     if (!status && clockInterval !== null) {
         clearInterval(clockInterval);
         clockInterval = null;
@@ -638,7 +647,8 @@ function createDeviceWithType(deviceType) {
     let card;
     let titleValue = deviceType;
     let includeInfoButton = false;
-    // create div with settings for device
+    // each device has a card with a title, a delete button, (and an info button is optional)
+    // along with some other stuff depending on the device type
 
     card = document.createElement('div');
     card.classList.add('device-card');
@@ -741,6 +751,7 @@ function autoClock() {
 }
 
 function updateDisplay() {
+    // update the display of the emulator
     document.getElementById('register-A').innerHTML = smpu.getValue('a');
     document.getElementById('register-A-bin').innerHTML = smpu.getValue('a').toString(2).padStart(8, '0');
     document.getElementById('register-B').innerHTML = smpu.getValue('b');
@@ -757,6 +768,7 @@ function updateDisplay() {
     document.getElementById('register-S-bin').innerHTML = smpu.getValue('s').toString(2).padStart(8, '0');
     document.getElementById('register-C').innerHTML = smpu.getValue('c');
     document.getElementById('register-C-bin').innerHTML = smpu.getValue('c').toString(2).padStart(1, '0');
+    // update device info
     const deviceInfo = document.getElementById('deviceInfo');
     if (outputtingInfoType === null) {
         deviceInfo.style.display = 'none';
