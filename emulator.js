@@ -1,3 +1,6 @@
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
 class SMPU {
     constructor() {
         this.registers = {
@@ -32,11 +35,11 @@ class SMPU {
         }
 
         if (['a', 'b', 'q', 'h', 'l', 's'].includes(register)) {
-            this.registers[register] = value % 256;
+            this.registers[register] = mod(value, 256);
         } else if (register === 'p') {
-            this.registers[register] = value % 65536;
+            this.registers[register] = mod(value, 65536);
         } else if (register === 'c') {
-            this.registers[register] = value % 2;
+            this.registers[register] = mod(value, 2);
         } else {
             throw new Error('Invalid register: ' + register);
         }
@@ -320,7 +323,7 @@ class SMPU {
                 for (let i = 0; i < 8; i++) {
                     result += this.getValue('a') >> i & 1;
                 }
-                this.setValue('c', result % 2);
+                this.setValue('c', mod(result, 2));
                 return [[], true];
             case 35: // CKSMC
                 result = 0;
@@ -328,7 +331,7 @@ class SMPU {
                     result += this.getValue('a') >> i & 1;
                 }
                 result += this.getValue('c');
-                this.setValue('c', result % 2);
+                this.setValue('c', mod(result, 2));
                 return [[], true];
             case 36: // INCR
                 this.setValue('q', this.getValue('q') + 1);
@@ -385,7 +388,7 @@ class SMPU {
                 if (this.getValue('s') === 255) {
                     debugMessages.push('WARN: Stack pointer underflowed');
                 }
-                out = this.writeDevices(this.getValue('s') + 0xFF00, this.getValue('p') % 256);
+                out = this.writeDevices(this.getValue('s') + 0xFF00, mod(this.getValue('p'), 256));
                 for (let i = 0; i < out[0].length; i++) {
                     debugMessages.push(out[0][i]);
                 }
@@ -446,12 +449,12 @@ class ReadWriteMemory {
         this.toUpdateInTable = [];
     }
     read(address) {
-        return [this.memory[address % (2 ** this.nbits)], true];
+        return [this.memory[mod(address, (2 ** this.nbits))], true];
     }
     write(address, value) {
-        this.memory[address % (2 ** this.nbits)] = value;
+        this.memory[mod(address, (2 ** this.nbits))] = value;
         if (this.table !== null) {
-            this.toUpdateInTable.push(address % (2 ** this.nbits));
+            this.toUpdateInTable.push(mod(address, (2 ** this.nbits)));
         }
         return true;
     }
@@ -671,19 +674,21 @@ function runOneClock() {
         clockIndex = (clockIndex + 1) % clockIcons.length;
         document.getElementById('clockIcon').innerText = clockIcons[clockIndex];
     }
+    const initialP = smpu.getValue('p');
     let out = smpu.clock();
-    if (clockInterval !== null && Date.now() - lastUpdate > 200) {
+    if (clockInterval === null || Date.now() - lastUpdate > 200) {
         updateDisplay();
         lastUpdate = Date.now();
     }
     const debugConsole = document.getElementById('debugConsole');
     for (let i = 0; i < out[0].length; i++) {
-        debugConsole.innerText += "[" + smpu.getValue("p") + "] " + out[0][i] + '\n';
+        debugConsole.innerText += "[" + initialP + "] " + out[0][i] + '\n';
     }
     let status = out[1]; // whether the computer has halted
     if (!status && clockInterval !== null) {
         clearInterval(clockInterval);
         clockInterval = null;
+        updateDisplay();
     }
 }
 
