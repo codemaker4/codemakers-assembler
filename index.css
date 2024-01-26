@@ -13,7 +13,7 @@ body {
     "code output"
     "emulator emulator";
   grid-template-columns: auto 30em;
-  grid-template-rows: auto min-content auto auto;
+  grid-template-rows: min-content min-content auto min-content;
 }
 
 .controlPanel {
@@ -144,7 +144,7 @@ body {
   height: 0;
   display: flex;
   /* Instead of height: 0 */
-  grid-area: "emulator";
+  grid-area: emulator;
   bottom: 0;
   left: 0;
   right: 0;
