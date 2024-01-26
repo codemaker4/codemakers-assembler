@@ -13,6 +13,7 @@ window.onload = () => {
 
     doLineNumbers();
     compiler.compile();
+    restartEmulator();
 
     let processTimeout;
     document.getElementById("input").onkeydown = () => {
@@ -22,7 +23,7 @@ window.onload = () => {
             doLineNumbers();
             compiler.compile();
             processTimeout = 0;
-        },1000);
+        }, 1000);
     };
 }
 
@@ -58,19 +59,19 @@ class Compiler {
         for (let lineNumber = 0; lineNumber < sourceCodeLines.length; lineNumber++) {
             let line = sourceCodeLines[lineNumber];
 
-            if (line.length == 0) {continue}
-            
+            if (line.length == 0) { continue }
+
             if (line.indexOf('-') != -1) {
                 line = line.slice(0, line.indexOf('-'));
             }
 
-            if (line.length == 0) {continue}
+            if (line.length == 0) { continue }
 
             while (line[0] == " ") {
                 line = line.slice(1);
             }
 
-            if (line.length == 0) {continue}
+            if (line.length == 0) { continue }
 
             // macros take up an entire line and can have spaces, so remove them here.
             if (line[0] == "#") {
@@ -192,14 +193,14 @@ class Compiler {
             codePart.address = address;
 
             if (codePart.type == "label") {
-                let found = labels.find((label)=>{label.label == codePart.output});
+                let found = labels.find((label) => { label.label == codePart.output });
                 if (found !== undefined) {
                     codePart.debugLog += `ERROR label already defined: This label was already defined at line ${found.origLine}. You can't have two labels with the same name.`;
                     codePart.hasError = true;
                     continue;
                 }
 
-                labels.push({"label": codePart.output, "address": address, "origLine": codePart.origLine});
+                labels.push({ "label": codePart.output, "address": address, "origLine": codePart.origLine });
                 codePart.debugLog += `This label is registered to address ${address}.\n`;
 
             } else if (codePart.type == "macro") {
@@ -220,7 +221,7 @@ class Compiler {
                         continue;
                     }
 
-                    if (newAddress < 0 || newAddress >= 2**16) {
+                    if (newAddress < 0 || newAddress >= 2 ** 16) {
                         codePart.debugLog += `ERROR skipto address out of range: The address ${newAddress} is not a number that fits in an unsigned 16 bit number, and is thus not supported by the SMPU.\n`;
                         codePart.hasError = true;
                         continue;
@@ -234,8 +235,8 @@ class Compiler {
 
                     address = newAddress;
 
-                    if (this.codeParts[i+1] !== undefined) {
-                        this.codeParts[i+1].debugLog += `The skipto macro from line ${codePart.origLine} skipped the address of this byte to ${newAddress}\n`;
+                    if (this.codeParts[i + 1] !== undefined) {
+                        this.codeParts[i + 1].debugLog += `The skipto macro from line ${codePart.origLine} skipped the address of this byte to ${newAddress}\n`;
                     }
 
                     this.codeParts.splice(i, 1);
@@ -260,7 +261,7 @@ class Compiler {
                     codePart.debugLog += "ERROR oops invalid non-error codepart: This codepart is invalid, but the compiler tried to process it further anyway. Please report this.\n";
                     codePart.hasError = true;
                     break;
-                
+
                 case "instruction":
                     const instruction = getInstrucion(codePart.origCode);
                     if (instruction.isError) {
@@ -276,11 +277,11 @@ class Compiler {
 
                     codePart.outputNum = instruction.id;
                     codePart.output = instruction.id.toString(2);
-                    while(codePart.output.length < 8) {
+                    while (codePart.output.length < 8) {
                         codePart.output = "0" + codePart.output;
                     }
                     break;
-                
+
                 case "address":
                     codePart.debugLog += "ERROR oops forgot split address: The compiler forgot to split up this address into seperate bytes. Please report this.\n";
                     codePart.hasError = true;
@@ -295,7 +296,7 @@ class Compiler {
                         break;
                     }
 
-                    let label = labels.find(label=>label.label == labelName);
+                    let label = labels.find(label => label.label == labelName);
                     if (label === undefined) {
                         codePart.debugLog += `ERROR label not found: Could not find label "${labelName}". Perhaps you made a typo in the case sensitive label name, or your label decleration had an error.`;
                         codePart.hasError = true;
@@ -321,11 +322,11 @@ class Compiler {
 
                     codePart.debugLog += `This addressByte was converted to binary. Note that this byte is just half of an address.\n`;
                     codePart.output = codePart.outputNum.toString(2);
-                    while(codePart.output.length < 8) {
+                    while (codePart.output.length < 8) {
                         codePart.output = "0" + codePart.output;
                     }
                     break;
-                
+
                 case "label":
                     codePart.debugLog += `Labels themselves don't actually get stored in the program output.\n`;
                     break;
@@ -347,11 +348,11 @@ class Compiler {
 
                     codePart.outputNum = num;
                     codePart.output = num.toString(2);
-                    while(codePart.output.length < 8) {
+                    while (codePart.output.length < 8) {
                         codePart.output = "0" + codePart.output;
                     }
                     break;
-                
+
                 case "macro":
                     codePart.debugLog += "ERROR oops forgot process macro: The compiler forgot to process and remove this macro. Please report this.\n";
                     codePart.hasError = true;
@@ -369,7 +370,7 @@ class Compiler {
             const codePart = this.codeParts[i];
 
             if (codePart.hasError) {
-                let firstError = codePart.debugLog.split("\n").find((line)=>line.indexOf("ERROR") != -1);
+                let firstError = codePart.debugLog.split("\n").find((line) => line.indexOf("ERROR") != -1);
                 let firstErrorName = firstError.substring(0, firstError.indexOf(":"));
                 codePart.output = `${firstErrorName}. ${codePart.output}`;
                 if (!compileMessage) {
@@ -417,12 +418,12 @@ class Compiler {
                 continue;
             }
 
-            if (codePart.outputNum === undefined || codePart.outputNum < 0 || codePart.outputNum >= 2**8) {
+            if (codePart.outputNum === undefined || codePart.outputNum < 0 || codePart.outputNum >= 2 ** 8) {
                 postMessage("Cannot export: Invalid byte found! This is a mistake of the compiler.");
                 return [];
             }
 
-            if (codePart.address === undefined || codePart.address < 0 || codePart.address >= 2**16) {
+            if (codePart.address === undefined || codePart.address < 0 || codePart.address >= 2 ** 16) {
                 postMessage("Cannot export: Invalid address found! This is a mistake of the compiler.");
                 return [];
             }
