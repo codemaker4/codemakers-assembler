@@ -59,6 +59,7 @@ body {
   border-left-width: 5px;
   border-style: solid;
   border-color: gray;
+  border-radius: 0px;
 }
 
 .codeContainer {
