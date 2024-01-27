@@ -67,9 +67,7 @@ class Compiler {
 
             if (line.length == 0) { continue }
 
-            while (line[0] == " ") {
-                line = line.slice(1);
-            }
+            line = line.trimLeft();
 
             if (line.length == 0) { continue }
 
